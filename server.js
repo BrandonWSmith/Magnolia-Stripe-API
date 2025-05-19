@@ -7,7 +7,7 @@ const stripe = require('stripe')('sk_test_51QACVHHm46eDZJRscbUvCbR6YRllCd2EGydGq
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: 'https://magnoliacremations.com',
+  origin: ['https://magnoliacremations.com', 'https://magnolia-cremations.myshopify.com'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
@@ -40,6 +40,38 @@ app.post('/create-checkout-session', async (req, res) => {
   });
   
   res.json({url: session.url});
+});
+
+app.post('/create-checkout-session-embeded', async (req, res) => {
+  const { price } = req.body;
+  const session = await stripe.checkout.sessions.create({
+    line_items: [
+      {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Magnolia Pre-Planning',
+          },
+          unit_amount: price,
+        },
+        quantity: 1,
+      },
+    ],
+    mode: 'payment',
+    ui_mode: 'custom',
+    payment_method_types: ['us_bank_account'],
+    payment_method_options: {
+      us_bank_account: {
+        verification_method: 'instant',
+        financial_connections: {
+          permissions: ['payment_method'],
+        },
+      },
+    },
+    return_url: 'https://magnolia-cremations.myshopify.com/pages/thank-you',
+  });
+
+  res.json({checkoutSessionClientSecret: session.client_secret});
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
