@@ -45,7 +45,6 @@ app.post('/create-checkout-session', async (req, res) => {
 app.post('/create-checkout-session-embeded', async (req, res) => {
   const { price } = req.body;
   const session = await stripe.checkout.sessions.create({
-    customer_email: null,
     line_items: [
       {
         price_data: {
