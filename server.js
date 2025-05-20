@@ -75,7 +75,7 @@ app.post('/create-checkout-session-embeded', async (req, res) => {
 });
 
 app.get('/secret', async (req, res) => {
-  const { price } = req.body;
+  const { price } = req.query;
   const paymentIntent = await stripe.paymentIntents.create({
     amount: price,
     currency: 'usd',
