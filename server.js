@@ -80,7 +80,8 @@ app.post('/secret', async (req, res) => {
     amount: price,
     currency: 'usd',
   });
-  
+
+  res.setHeaders('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
   res.json({client_secret: paymentIntent.client_secret});
 });
 
