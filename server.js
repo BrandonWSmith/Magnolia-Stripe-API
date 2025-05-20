@@ -75,11 +75,10 @@ app.post('/create-checkout-session-embeded', async (req, res) => {
 });
 
 app.post('/create-payment-intent', async (req, res) => {
-  const { price, paymentMethod } = req.body;
+  const { price } = req.body;
   const paymentIntent = await stripe.paymentIntents.create({
     amount: price,
     currency: 'usd',
-    payment_method: paymentMethod,
     payment_method_types: ['us_bank_account'],
     payment_method_options: {
       us_bank_account: {
@@ -89,11 +88,10 @@ app.post('/create-payment-intent', async (req, res) => {
         },
       },
     },
-    confirm: true,
   });
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-  res.json({client_secret: paymentIntent.client_secret, payment_intent_id: paymentIntent.id});
+  res.json({client_secret: paymentIntent.client_secret});
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
