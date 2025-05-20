@@ -74,13 +74,14 @@ app.post('/create-checkout-session-embeded', async (req, res) => {
   res.json({checkoutSessionClientSecret: session.client_secret});
 });
 
-app.get('/secret', async (req, res) => {
-  const { price } = req.query;
+app.post('/secret', async (req, res) => {
+  const { price } = req.body;
   const paymentIntent = await stripe.paymentIntents.create({
     amount: price,
     currency: 'usd',
   });
+  
   res.json({client_secret: paymentIntent.client_secret});
-})
+});
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
