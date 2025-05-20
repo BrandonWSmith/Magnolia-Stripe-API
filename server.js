@@ -88,10 +88,11 @@ app.post('/create-payment-intent', async (req, res) => {
         },
       },
     },
+    confirm: true,
   });
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-  res.json({client_secret: paymentIntent.client_secret});
+  res.json({client_secret: paymentIntent.client_secret, payment_intent_id: paymentIntent.id});
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
