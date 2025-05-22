@@ -84,7 +84,8 @@ app.post('/create-payment-intent', async (req, res) => {
       us_bank_account: {
         verification_method: 'instant',
         financial_connections: {
-          permissions: ['payment_method'],
+          prefetch: ['balances', 'ownership'],
+          permissions: ['payment_method', 'balances', 'ownership'],
         },
       },
     },
@@ -99,7 +100,6 @@ let hulkFormData;
 app.post('/store-form-data', (req, res) => {
   const { formData } = req.body;
   hulkFormData = formData;
-  console.log(hulkFormData);
 });
 
 app.get('/get-form-data', (req, res) => {
