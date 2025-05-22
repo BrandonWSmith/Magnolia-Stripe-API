@@ -104,7 +104,8 @@ app.post('/store-form-data', (req, res) => {
   hulkFormData = formData;
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-  res.status(201).json({"message": "Form data stored on server"});
+  res.status(201).json({message: "Form data temporarily stored on server"});
+  res.redirect('https://magnolia-cremations.myshopify.com/pages/thank-you');
 });
 
 app.get('/get-form-data', (req, res) => {
@@ -114,7 +115,7 @@ app.get('/get-form-data', (req, res) => {
   } else {
     console.log('IP does not match');
     res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-    res.json({"message": "There was an issue retrieving form data"});
+    res.json({message: "There was an issue retrieving form data"});
   }
 });
 
