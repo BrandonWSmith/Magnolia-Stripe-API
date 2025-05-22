@@ -94,4 +94,16 @@ app.post('/create-payment-intent', async (req, res) => {
   res.json({client_secret: paymentIntent.client_secret});
 });
 
+let hulkFormData;
+
+app.post('/store-form-data', (req, res) => {
+  const { formData } = req.body;
+  hulkFormData = formData;
+  console.log(hulkFormData);
+});
+
+app.get('/get-form-data', (req, res) => {
+  res.json({hulkFormData: hulkFormData});
+});
+
 app.listen(port, () => console.log(`Listening on port ${port}`));
