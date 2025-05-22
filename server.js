@@ -95,15 +95,25 @@ app.post('/create-payment-intent', async (req, res) => {
   res.json({client_secret: paymentIntent.client_secret});
 });
 
+let ip;
 let hulkFormData;
 
 app.post('/store-form-data', (req, res) => {
   const { formData } = req.body;
+  ip = req.headers['x-forward-for'] || req.socket.remoteAddress;
   hulkFormData = formData;
+
+  res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
 });
 
 app.get('/get-form-data', (req, res) => {
-  res.json({hulkFormData: hulkFormData});
+  if (req.headers['x-forward-for'] === ip || req.socket.remoteAddress === ip) {
+    res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
+    res.json({hulkFormData: hulkFormData});
+  } else {
+    console.log('IP does not match');
+    res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
+  }
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
