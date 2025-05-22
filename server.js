@@ -104,6 +104,7 @@ app.post('/store-form-data', (req, res) => {
   hulkFormData = formData;
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
+  res.status(201).send("Form data stored on server");
 });
 
 app.get('/get-form-data', (req, res) => {
@@ -113,6 +114,7 @@ app.get('/get-form-data', (req, res) => {
   } else {
     console.log('IP does not match');
     res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
+    res.send("There was an issue retrieving form data");
   }
 });
 
