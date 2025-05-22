@@ -104,8 +104,7 @@ app.post('/store-form-data', (req, res) => {
   hulkFormData = formData;
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-  res.status(201).json({message: "Form data temporarily stored on server"});
-  res.redirect('https://magnolia-cremations.myshopify.com/pages/thank-you');
+  res.redirect(201, 'https://magnolia-cremations.myshopify.com/pages/thank-you');
 });
 
 app.get('/get-form-data', (req, res) => {
