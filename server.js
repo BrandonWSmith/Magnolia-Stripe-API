@@ -105,6 +105,8 @@ app.post('/get-account', async (req, res) => {
     }
   );
 
+  console.log(paymentIntent);
+
   const account = await stripe.financialConnections.accounts.retrieve(
     paymentIntent.payment_method.us_bank_account.financial_connections_account,
     {
@@ -117,7 +119,7 @@ app.post('/get-account', async (req, res) => {
   );
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-  res.json({account: account, payment_method: paymentMethod});
+  res.json({account: account/*, payment_method: paymentMethod*/});
 })
 
 let ip;
