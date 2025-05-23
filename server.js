@@ -114,7 +114,18 @@ app.post('/get-account', async (req, res) => {
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
   res.json({account: account, paymentMethod: paymentIntent.payment_method});
-})
+});
+
+app.post('/get-payment-intent', async (req, res) => {
+  const { paymentIntentId } = req.body;
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(
+    paymentIntentId
+  );
+
+  res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
+  res.json({paymentIntent: paymentIntent});
+});
 
 let ip;
 let hulkFormData;
