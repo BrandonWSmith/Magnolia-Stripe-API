@@ -113,7 +113,7 @@ app.post('/get-account', async (req, res) => {
   );
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-  res.json({account: account, enteredName: paymentIntent.payment_method.billing_details.name});
+  res.json({account: account, paymentMethod: paymentIntent.payment_method});
 })
 
 let ip;
