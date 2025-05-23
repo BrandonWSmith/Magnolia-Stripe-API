@@ -92,7 +92,7 @@ app.post('/create-payment-intent', async (req, res) => {
   });
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-  res.json({client_secret: paymentIntent.client_secret, payment_intent_id: paymentIntent.id});
+  res.json({client_secret: paymentIntent.client_secret});
 });
 
 app.post('/get-account-balance', async (req, res) => {
@@ -104,11 +104,12 @@ app.post('/get-account-balance', async (req, res) => {
       expand: ['payment_method'],
     }
   );
-  console.log(paymentIntent);
 
-  // const account = await stripe.financialConnections.accounts.retrieve(
-  //   await paymentIntent.payment_method.us_bank_account.financial_connections_account
-  // );
+  const account = await stripe.financialConnections.accounts.retrieve(
+    await paymentIntent.payment_method.us_bank_account.financial_connections_account
+  );
+
+  console.log(account);
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
   res.json({accountBalance: account.balance});
