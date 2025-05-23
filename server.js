@@ -87,15 +87,12 @@ app.post('/create-payment-intent', async (req, res) => {
           prefetch: ['balances', 'ownership'],
           permissions: ['payment_method', 'balances', 'ownership'],
         },
-        networks: {
-          requested: 'ach',
-        },
       },
     },
   });
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-  res.json({client_secret: paymentIntent.client_secret});
+  res.json({client_secret: paymentIntent.client_secret, financial_connections_account: paymentIntent.payment_method.us_bank_account.financial_connections_account});
 });
 
 let ip;
