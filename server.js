@@ -87,6 +87,9 @@ app.post('/create-payment-intent', async (req, res) => {
           prefetch: ['balances', 'ownership'],
           permissions: ['payment_method', 'balances', 'ownership'],
         },
+        networks: {
+          requested: 'ach',
+        },
       },
     },
   });
