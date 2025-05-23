@@ -112,8 +112,12 @@ app.post('/get-account', async (req, res) => {
     }
   );
 
+  const paymentMethod = await stripe.paymentMethods.retrieve(
+    paymentIntent.payment_method
+  );
+
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-  res.json({account: account});
+  res.json({account: account, payment_method: payment_method});
 })
 
 let ip;
