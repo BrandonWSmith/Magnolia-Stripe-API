@@ -95,6 +95,24 @@ app.post('/create-payment-intent', async (req, res) => {
   res.json({client_secret: paymentIntent.client_secret, payment_intent_id: paymentIntent.id});
 });
 
+app.post('/get-account-balance', async (req, res) => {
+  const { paymentIntentId } = req.body;
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(
+    paymentIntentId,
+    {
+      expand: ['payment_method'],
+    }
+  );
+
+  const account = await stripe.financialConnections.accounts.retrieve(
+    paymentIntent.payment_method.us_bank_account.financial_connections_account
+  );
+
+  res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
+  res.json({accountBalance: account.balance});
+})
+
 let ip;
 let hulkFormData;
 
