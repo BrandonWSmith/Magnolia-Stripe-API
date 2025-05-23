@@ -95,7 +95,7 @@ app.post('/create-payment-intent', async (req, res) => {
   res.json({client_secret: paymentIntent.client_secret});
 });
 
-app.post('/get-account-balance', async (req, res) => {
+app.post('/get-account', async (req, res) => {
   const { paymentIntentId } = req.body;
 
   const paymentIntent = await stripe.paymentIntents.retrieve(
@@ -106,13 +106,14 @@ app.post('/get-account-balance', async (req, res) => {
   );
 
   const account = await stripe.financialConnections.accounts.retrieve(
-    await paymentIntent.payment_method.us_bank_account.financial_connections_account
+    paymentIntent.payment_method.us_bank_account.financial_connections_account,
+    {
+      expand: ['ownership'],
+    }
   );
 
-  console.log(account);
-
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
-  res.json({accountBalance: account.balance});
+  res.json({account: account});
 })
 
 let ip;
