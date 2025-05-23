@@ -106,7 +106,7 @@ app.post('/get-account-balance', async (req, res) => {
   );
 
   const account = await stripe.financialConnections.accounts.retrieve(
-    paymentIntent.payment_method.us_bank_account.financial_connections_account
+    await paymentIntent.payment_method.us_bank_account.financial_connections_account
   );
 
   res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
