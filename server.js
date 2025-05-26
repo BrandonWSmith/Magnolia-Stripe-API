@@ -150,4 +150,4 @@ app.get('/get-form-data', (req, res) => {
   }
 });
 
-app.listen(port, () => console.log(`Listening on port ${port} ${process.env.STRIPE_SERVER_KEY}`));
+app.listen(port, () => console.log(`Listening on port ${port}`));
