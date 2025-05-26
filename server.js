@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const port = 3000;
-const stripe = require('stripe')('sk_test_51QACVHHm46eDZJRscbUvCbR6YRllCd2EGydGq5kOWFhilvyZ8kTHClpatY3qSZ7wExuWABeZcrMnd16SC5MDAIVy00nFCWyqlx')
+const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
