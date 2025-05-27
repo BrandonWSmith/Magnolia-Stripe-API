@@ -7,7 +7,7 @@ const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: ['https://magnoliacremations.com', 'https://magnolia-cremations.myshopify.com'],
+  origin: 'https://magnoliacremations.com',
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
@@ -111,7 +111,6 @@ app.post('/get-account', async (req, res) => {
     }
   );
 
-  res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
   res.json({account: account, paymentMethod: paymentIntent.payment_method});
 });
 
@@ -122,7 +121,6 @@ app.post('/get-payment-intent', async (req, res) => {
     paymentIntentId
   );
 
-  res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
   res.json({paymentIntent: paymentIntent});
 });
 
@@ -134,17 +132,14 @@ app.post('/store-form-data', (req, res) => {
   ip = req.headers['x-forward-for'] || req.socket.remoteAddress;
   hulkFormData = formData;
 
-  res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
   res.status(201).json({message: "Form data temporarily stored on server", url: "https://magnolia-cremations.myshopify.com/pages/thank-you"});
 });
 
 app.get('/get-form-data', (req, res) => {
   if (req.headers['x-forward-for'] === ip || req.socket.remoteAddress === ip) {
-    res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
     res.json({hulkFormData: hulkFormData});
   } else {
     console.log('IP does not match');
-    res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
     res.json({message: "There was an issue retrieving form data"});
   }
 });
