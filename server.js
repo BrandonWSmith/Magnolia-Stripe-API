@@ -82,7 +82,6 @@ app.post('/create-payment-intent', async (req, res) => {
     payment_method_types: ['us_bank_account'],
     payment_method_options: {
       us_bank_account: {
-        verification_method: 'instant',
         financial_connections: {
           prefetch: ['balances', 'ownership'],
           permissions: ['payment_method', 'balances', 'ownership'],
