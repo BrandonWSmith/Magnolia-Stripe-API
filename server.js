@@ -32,11 +32,15 @@ app.post('/shopify-admin-api', async (req, res) => {
     isOnline: false,
   });
   const client = new shopify.clients.Graphql({ session: session });
-  const data = await client.request({
-    data: queryString,
-  });
+  try {
+    const data = await client.request({
+      data: queryString,
+    });
 
-  res.json({data: data});
+    res.json({data: data});
+  } catch (e) {
+    console.log(e);
+  }
 });
 
 app.post('/create-payment-intent', async (req, res) => {
