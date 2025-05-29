@@ -3,7 +3,7 @@ const app = express();
 const cors = require('cors');
 const port = 3000;
 require('@shopify/shopify-api/adapters/node');
-const { Session, shopifyApi } = require('@shopify/shopify-api');
+const { Session, shopifyApi, LATEST_API_VERSION } = require('@shopify/shopify-api');
 const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
 
 app.use(express.json());
@@ -17,10 +17,12 @@ app.post('/shopify-admin-api', async (req, res) => {
   const { queryString } = req.body;
   console.log(queryString);
   const shopify = shopifyApi({
+    apiVersion: LATEST_API_VERSION,
     apiKey: process.env.SHOPIFY_API_KEY,
     apiSecretKey: process.env.SHOPIFY_API_SECRET_KEY,
     scopes: ['write_orders', 'write_customers'],
     hostName: 'https://impact-ma-andorra-wrapped.trycloudflare.com',
+    isEmbeddedApp: true,
     isCustomStoreApp: true,
     adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
   });
