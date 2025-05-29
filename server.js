@@ -19,7 +19,7 @@ app.post('/shopify-admin-api', async (req, res) => {
   const shopify = shopifyApi({
     apiKey: process.env.SHOPIFY_API_KEY,
     apiSecretKey: process.env.SHOPIFY_API_SECRET_KEY,
-    scopes: ['write_orders'],
+    scopes: ['write_orders', 'write_customers'],
     hostName: 'https://impact-ma-andorra-wrapped.trycloudflare.com',
     isCustomStoreApp: true,
     adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
@@ -39,7 +39,7 @@ app.post('/shopify-admin-api', async (req, res) => {
 
     res.json({data: data});
   } catch (e) {
-    console.log(e.body);
+    console.log(e.response.body);
     res.status(400).json({data: e});
   }
 });
