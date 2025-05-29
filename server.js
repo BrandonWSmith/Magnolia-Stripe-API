@@ -2,6 +2,8 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const port = 3000;
+require('@shopify/shopify-api/adapters/node');
+const { Session, shopifyApi } = require('@shopify/shopify-api');
 const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
 
 app.use(express.json());
@@ -11,67 +13,29 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.post('/create-checkout-session', async (req, res) => {
-  const { price } = req.body;
-  const session = await stripe.checkout.sessions.create({
-    line_items: [
-      {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: 'Magnolia Pre-Planning',
-          },
-          unit_amount: price,
-        },
-        quantity: 1,
-      },
-    ],
-    mode: 'payment',
-    payment_method_types: ['us_bank_account'],
-    payment_method_options: {
-      us_bank_account: {
-        verification_method: 'instant',
-        financial_connections: {
-          permissions: ['payment_method'],
-        },
-      },
-    },
-    success_url: 'https://magnolia-cremations.myshopify.com/pages/thank-you',
+app.post('/shopify-admin-api', async (req, res) => {
+  const { queryString } = req.body;
+  const shopify = shopifyApi({
+    apiKey: process.env.SHOPIFY_API_KEY,
+    apiSecretKey: process.env.SHOPIFY_API_SECRET_KEY,
+    scopes: ['write_orders'],
+    hostName: 'https://impact-ma-andorra-wrapped.trycloudflare.com',
+    isCustomStoreApp: true,
+    adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
   });
-  
-  res.json({url: session.url});
-});
-
-app.post('/create-checkout-session-embeded', async (req, res) => {
-  const { price } = req.body;
-  const session = await stripe.checkout.sessions.create({
-    line_items: [
-      {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: 'Magnolia Pre-Planning',
-          },
-          unit_amount: price,
-        },
-        quantity: 1,
-      },
-    ],
-    mode: 'payment',
-    ui_mode: 'custom',
-    payment_method_types: ['us_bank_account'],
-    payment_method_options: {
-      us_bank_account: {
-        verification_method: 'instant',
-        financial_connections: {
-          permissions: ['payment_method'],
-        },
-      },
-    },
-    return_url: 'https://magnolia-cremations.myshopify.com/pages/thank-you',
+  const sessionId = shopify.session.getOfflineId('magnolia-cremations.myshopify.com');
+  const session = new Session({
+    id: sessionId,
+    shop: 'magnolia-cremations.myshopify.com',
+    state: 'state',
+    isOnline: false,
+  });
+  const client = new shopify.clients.Graphql({ session: session });
+  const data = await client.query({
+    data: queryString,
   });
 
-  res.json({checkoutSessionClientSecret: session.client_secret});
+  res.json({data: data});
 });
 
 app.post('/create-payment-intent', async (req, res) => {
@@ -90,7 +54,6 @@ app.post('/create-payment-intent', async (req, res) => {
     },
   });
 
-  res.set('Access-Control-Allow-Origin', 'https://magnoliacremations.com');
   res.json({client_secret: paymentIntent.client_secret});
 });
 
