@@ -39,7 +39,8 @@ app.post('/shopify-admin-api', async (req, res) => {
 
     res.json({data: data});
   } catch (e) {
-    res.json({data: e.body});
+    console.log(e.body);
+    res.status(400).json({data: e});
   }
 });
 
