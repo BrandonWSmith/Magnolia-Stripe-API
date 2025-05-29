@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
-const port = 3000;
+const port = process.env.PORT || 11000;
 require('@shopify/shopify-api/adapters/node');
 const { Session, shopifyApi, LATEST_API_VERSION } = require('@shopify/shopify-api');
 const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
