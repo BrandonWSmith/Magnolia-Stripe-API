@@ -15,8 +15,6 @@ app.use(cors({
 
 app.post('/shopify-admin-api', async (req, res) => {
   const { queryString, variables } = req.body;
-  console.log(queryString);
-  console.log(variables);
   const shopify = shopifyApi({
     apiVersion: LATEST_API_VERSION,
     apiKey: process.env.SHOPIFY_API_KEY,
