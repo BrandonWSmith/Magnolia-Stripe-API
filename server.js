@@ -15,6 +15,7 @@ app.use(cors({
 
 app.post('/shopify-admin-api', async (req, res) => {
   const { queryString } = req.body;
+  console.log(queryString);
   const shopify = shopifyApi({
     apiKey: process.env.SHOPIFY_API_KEY,
     apiSecretKey: process.env.SHOPIFY_API_SECRET_KEY,
@@ -31,7 +32,7 @@ app.post('/shopify-admin-api', async (req, res) => {
     isOnline: false,
   });
   const client = new shopify.clients.Graphql({ session: session });
-  const data = await client.query({
+  const data = await client.request({
     data: queryString,
   });
 
