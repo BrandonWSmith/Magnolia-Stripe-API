@@ -66,6 +66,7 @@ app.post('/create-payment-intent', async (req, res) => {
 
 app.post('/get-account', async (req, res) => {
   const { paymentIntentId } = req.body;
+  console.log(paymentIntentId);
 
   const paymentIntent = await stripe.paymentIntents.retrieve(
     paymentIntentId,
@@ -73,6 +74,7 @@ app.post('/get-account', async (req, res) => {
       expand: ['payment_method'],
     }
   );
+  console.log(paymentIntent);
 
   const account = await stripe.financialConnections.accounts.retrieve(
     paymentIntent.payment_method.us_bank_account.financial_connections_account,
