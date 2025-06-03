@@ -102,7 +102,7 @@ app.post('/store-form-data', (req, res) => {
   ip = req.headers['x-forward-for'] || req.socket.remoteAddress;
   hulkFormData = formData;
 
-  res.status(201).json({message: "Form data temporarily stored on server", url: "https://magnolia-cremations.myshopify.com/pages/thank-you"});
+  res.status(201).json({message: "Form data temporarily stored on server", url: "https://magnolia-cremations.myshopify.com/pages/plan-ahead-payment"});
 });
 
 app.get('/get-form-data', (req, res) => {
