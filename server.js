@@ -14,7 +14,7 @@ app.use(cors({
 }));
 
 app.get('/klaviyo-checkout-events', async (req, res) => {
-  const url = 'https://a.klaviyo.com/api/events?include=profile&fields[profile]=email&filter=equals%28metric_id%2C%27RuC9yk%27%29',
+  const url = 'https://a.klaviyo.com/api/events?include=profile&fields[profile]=email&filter=equals%28metric_id%2C%27RuC9yk%27%29';
   const options = {
     method: 'GET',
     headers: {
