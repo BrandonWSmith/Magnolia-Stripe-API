@@ -15,10 +15,57 @@ app.use(cors({
 }));
 
 app.post('/klaviyo-checkout-event', async (req, res) => {
-  client = new Klaviyo('TujxU8');
   const { formData } = req.body;
-  console.log(formData);
-  client.track("Form Data", JSON.parse(formData));
+  const url = 'https://a.klaviyo.com/api/events';
+  const options = {
+    method: 'POST',
+    headers: {
+      accept: 'application/vnd.api+json',
+      revision: '2025-04-15',
+      'content-type': 'application/vnd.api+json',
+      Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+    },
+    body: `{
+      "data":{
+        "type":"event",
+        "attributes":{
+          "properties":{
+            "$extra:${formData}
+          },
+          "metric":{
+            "data":{
+              "type":"metric",
+              "attributes":{
+                "name":"Form Data"
+              }
+            }
+          },
+          "profile":{
+            "data":{
+              "type":"profile",
+              "attributes":{
+                "location":{
+                  "address1":${formData.contact_street_address},
+                  "city":${formData.contact_city},
+                  "country":"United States",
+                  "region":${formData.contact_state},
+                  "zip":${formData.contact_zip_code}
+                },
+                "email":${formData.contact_email},"phone_number":${formData.contact_phone},
+                "first_name":${formData.contact_first_name},
+                "last_name":${formData.contact_last_name}
+              }
+            }
+          }
+        }
+      }
+    }`
+  };
+
+  fetch(url, options)
+    .then(res => res.json())
+    .then(json => console.log(json))
+    .catch(err => console.error(err));
 });
 
 app.post('/shopify-admin-api', async (req, res) => {
