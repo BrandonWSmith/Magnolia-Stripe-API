@@ -10,7 +10,7 @@ const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: 'https://magnoliacremations.com',
+  origin: '*',
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
@@ -18,7 +18,6 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
   client = new Klaviyo('TujxU8');
   const { formData } = req.body;
   client.track("Form Data", formData);
-  res.set('Access-Control-Allow-Origin', '*');
 });
 
 app.post('/shopify-admin-api', async (req, res) => {
