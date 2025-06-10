@@ -4,6 +4,7 @@ const cors = require('cors');
 const port = process.env.PORT || 11000;
 require('@shopify/shopify-api/adapters/node');
 const { Session, shopifyApi, LATEST_API_VERSION } = require('@shopify/shopify-api');
+const Klaviyo = require('klaviyo-node');
 const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
 
 app.use(express.json());
@@ -13,23 +14,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.get('/klaviyo-checkout-events', async (req, res) => {
-  const url = 'https://a.klaviyo.com/api/events?include=profile&fields[profile]=email&filter=equals%28metric_id%2C%27RuC9yk%27%29';
-  const options = {
-    method: 'GET',
-    headers: {
-      accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
-      Authorization: 'Klaviyo-API-Key pk_1f37396496a58b1dee81f84c0ab3f9e740',
-    },
-  }
-
-  const data = await fetch(url, options)
-    .then(res => res.json())
-    .then(data => data)
-    .catch(e => console.log(e));
-
-  res.json({data: data});
+app.get('/klaviyo-checkout-event', async (req, res) => {
+  client = new Klaviyo('TujxU8');
+  const { formData } = req.body;
+  client.track("Form Data", formData);
 });
 
 app.post('/shopify-admin-api', async (req, res) => {
