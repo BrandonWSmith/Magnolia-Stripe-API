@@ -43,7 +43,7 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
                 "zip":"${formData.contact_zip_code}"
               },
               "email":"${formData.contact_email}",
-              "phone_number":"+1${formData.contact_phone.replace("-", "")}",
+              "phone_number":"+1${formData.contact_phone.replaceAll("-", "")}",
               "first_name":"${formData.contact_first_name}",
               "last_name":"${formData.contact_last_name}"
             }
