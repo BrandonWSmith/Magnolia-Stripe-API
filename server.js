@@ -68,7 +68,10 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(res => res.json())
+    .then(res => {
+      console.log(res);
+      res.json();
+    })
     .then(json => console.log(json))
     .catch(err => console.error(err));
 });
