@@ -14,7 +14,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.get('/klaviyo-checkout-event', async (req, res) => {
+app.post('/klaviyo-checkout-event', async (req, res) => {
   client = new Klaviyo('TujxU8');
   const { formData } = req.body;
   client.track("Form Data", formData);
