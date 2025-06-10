@@ -13,6 +13,25 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+app.get('/klaviyo-checkout-events', async (req, res) => {
+  const url = 'https://a.klaviyo.com/api/events?include=profile&fields[profile]=email&filter=equals%28metric_id%2C%27RuC9yk%27%29',
+  const options = {
+    method: 'GET',
+    headers: {
+      accept: 'application/vnd.api+json',
+      revision: '2025-04-15',
+      Authorization: 'Klaviyo-API-Key pk_1f37396496a58b1dee81f84c0ab3f9e740',
+    },
+  }
+
+  const data = await fetch(url, options)
+    .then(res => res.json())
+    .then(data => data)
+    .catch(e => console.log(e));
+
+  res.json({data: data});
+});
+
 app.post('/shopify-admin-api', async (req, res) => {
   const { queryString, variables } = req.body;
   const shopify = shopifyApi({
