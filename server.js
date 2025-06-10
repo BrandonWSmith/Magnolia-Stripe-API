@@ -16,6 +16,10 @@ app.use(cors({
 
 app.post('/klaviyo-checkout-event', async (req, res) => {
   const { formData } = req.body;
+  const body = `{"data":{"type":"event","attributes":{"properties":{"$extra":${JSON.stringify(formData)}},"metric":{"data":{"type":"metric","attributes":{"name":"Form Data"}}},"profile":{"data":{"type":"profile","attributes":{"location":{"address1":${formData.contact_street_address},"city":${formData.contact_city},"country":"United States","region":${formData.contact_state},"zip":${formData.contact_zip_code}},"email":${formData.contact_email},"phone_number":${formData.contact_phone},"first_name":${formData.contact_first_name},"last_name":${formData.contact_last_name}}}}}}}`;
+
+  console.log(body);
+  
   const url = 'https://a.klaviyo.com/api/events';
   const options = {
     method: 'POST',
@@ -25,7 +29,7 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
       'content-type': 'application/vnd.api+json',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     },
-    body: `{"data":{"type":"event","attributes":{"properties":{"$extra":${JSON.stringify(formData)}},"metric":{"data":{"type":"metric","attributes":{"name":"Form Data"}}},"profile":{"data":{"type":"profile","attributes":{"location":{"address1":${formData.contact_street_address},"city":${formData.contact_city},"country":"United States","region":${formData.contact_state},"zip":${formData.contact_zip_code}},"email":${formData.contact_email},"phone_number":${formData.contact_phone},"first_name":${formData.contact_first_name},"last_name":${formData.contact_last_name}}}}}}}`
+    body: body,
   };
 
   fetch(url, options)
