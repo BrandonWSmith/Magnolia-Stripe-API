@@ -18,7 +18,7 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
   client = new Klaviyo('TujxU8');
   const { formData } = req.body;
   console.log(formData);
-  client.track("Form Data", formData);
+  client.track("Form Data", JSON.stringify(formData));
 });
 
 app.post('/shopify-admin-api', async (req, res) => {
