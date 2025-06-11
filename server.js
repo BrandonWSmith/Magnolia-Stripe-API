@@ -16,6 +16,7 @@ app.use(cors({
 
 app.post('/klaviyo-checkout-event', async (req, res) => {
   const { formData } = req.body;
+  console.log(formData);
   const body = `{
     "data":{
       "type":"event",
@@ -34,16 +35,16 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
             "type":"profile",
             "attributes":{
               "location":{
-                "address1":"${formData.contact_street_address}",
-                "city":"${formData.contact_city}",
+                "address1":"${formData.form_data.contact_street_address}",
+                "city":"${formData.form_data.contact_city}",
                 "country":"United States",
-                "region":"${formData.contact_state}",
-                "zip":"${formData.contact_zip_code}"
+                "region":"${formData.form_data.contact_state}",
+                "zip":"${formData.form_data.contact_zip_code}"
               },
-              "email":"${formData.contact_email}",
-              "phone_number":"+1${formData.contact_phone.replaceAll("-", "")}",
-              "first_name":"${formData.contact_first_name}",
-              "last_name":"${formData.contact_last_name}"
+              "email":"${formData.form_data.contact_email}",
+              "phone_number":"+1${formData.form_data.contact_phone.replaceAll("-", "")}",
+              "first_name":"${formData.form_data.contact_first_name}",
+              "last_name":"${formData.form_data.contact_last_name}"
             }
           }
         }
