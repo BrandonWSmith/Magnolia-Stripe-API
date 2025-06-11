@@ -52,8 +52,6 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
       }
     }
   }`;
-
-  console.log(body);
   
   const url = 'https://a.klaviyo.com/api/events';
   const options = {
@@ -68,11 +66,7 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(res => {
-      console.log(res);
-      res.json();
-    })
-    .then(json => console.log(json))
+    .then(response => response.status === 202 ? res.send() : console.log(response))
     .catch(err => console.error(err));
 });
 
