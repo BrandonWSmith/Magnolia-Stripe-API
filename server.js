@@ -20,9 +20,7 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
     "data":{
       "type":"event",
       "attributes":{
-        "properties":{
-          "$extra":${JSON.stringify(formData)}
-        },
+        "properties":${JSON.stringify(formData)},
         "metric":{
           "data":{
             "type":"metric",
