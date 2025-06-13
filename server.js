@@ -57,6 +57,7 @@ app.post('/calculator-contact', (req, res) => {
     <p>Preferred Time?</p>
     <b>${formData.contact_time}</b>
   `;
+  console.log(process.env.EMAIL_PASSWORD);
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
