@@ -61,7 +61,7 @@ app.post('/calculator-contact', (req, res) => {
     service: 'gmail',
     auth: {
       user: 'brandon@magnoliacremations.com',
-      pass: process.env.EMAIL_PASSWORD.toString()
+      pass: process.env.EMAIL_PASSWORD
     }
   });
 
@@ -85,7 +85,6 @@ app.post('/calculator-contact', (req, res) => {
 
 app.post('/klaviyo-checkout-event', async (req, res) => {
   const { formData } = req.body;
-  console.log(formData);
   const body = `{
     "data":{
       "type":"event",
