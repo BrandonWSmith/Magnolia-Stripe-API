@@ -17,6 +17,9 @@ app.use(cors({
 emailjs.init({
   publicKey: process.env.EMAILJS_PUBLIC_KEY,
   privateKey: process.env.EMAILJS_PRIVATE_KEY,
+  limitRate: {
+    throttle: 5000,
+  }
 });
 
 app.post('/calculator-contact', (req, res) => {
