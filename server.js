@@ -4,7 +4,7 @@ const cors = require('cors');
 const port = process.env.PORT || 11000;
 require('@shopify/shopify-api/adapters/node');
 const { Session, shopifyApi, LATEST_API_VERSION } = require('@shopify/shopify-api');
-const nodemailer = require('nodemailer');
+const emailjs = require('@emailjs/browser');
 const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
 
 app.use(express.json());
