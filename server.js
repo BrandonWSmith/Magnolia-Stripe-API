@@ -16,70 +16,23 @@ app.use(cors({
 
 app.post('/calculator-contact', (req, res) => {
   const { formData } = req.body;
-  console.log(formData);
-  const emailBody = `
-    <p>Magnolia's Essential Cremation Package</p>
-    <b>Cremation Service Package - $895</b>
-    <br>
-    <p>Choose the Perfect Urn for Your Loved One</p>
-    <b>${formData.urn_price}</b>
-    <br>
-    <p>Would you like to personalize the urn with a special engraving?</p>
-    <b>${formData.urn_engraving ? "Yes" : "No"}</b>
-    <br>
-    <p>Would you like to schedule a "Private Family Viewing?</p>
-    <b>${formData.private_family_viewing_total > 0 ? "Yes" : "No"}</b>
-    <br>
-    <p>Please enter the address (or City, State) for the pickup location of your loved one to calculate any additional transporation fees:</p>
-    <b>${formData.contact_street_address}, ${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}</b>
-    <br>
-    <p>Additional transportation fee from pickup location:</p>
-    <b>${formData.transfer_fee}</b>
-    <br>
-    <p>How many death certificates do you need?</p>
-    <b>${formData.death_certificates_quantity}</b>
-    <br>
-    <p>Would you like us to use USPS's cremains service to safely ship your loved one to you?</p>
-    <b>${formData.shipping > 0 ? "Yes" : "No, I'll pick up my loved one."}</b>
-    <br>
-    <p>TOTAL PACKAGE PRICE</p>
-    <b>${formData.total_price}</b>
-    <br>
-    <p>Name:</p>
-    <b>${formData.name}</b>
-    <br>
-    <p>Phone:</p>
-    <b>${formData.phone}</b>
-    <br>
-    <p>How Would You Prefer to Communicate?</p>
-    <b>${formData.contact_type}</b>
-    <br>
-    <p>Preferred Time?</p>
-    <b>${formData.contact_time}</b>
-  `;
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'brandon@magnoliacremations.com',
-      pass: process.env.EMAIL_PASSWORD
-    }
-  });
-
-  const mailOptions = {
-    from: 'brandon@magnoliacremations.com',
-    to: 'brandon@magnoliacremations.com',
-    subject: 'Client Requesting Assistance',
-    html: emailBody
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.log(error);
-      res.json({data: error});
-    } else {
-      console.log('Email sent: ' + info.response);
-      res.json({data: info});
-    }
+  emailjs.send("service_xg0f1dg","template_ukx3wvz",{
+    name: formData.name,
+    urn_price: formData.urn_price,
+    urn_engraving: `${formData.urn_engraving ? "Yes" : "No"}`,
+    private_family_viewing: `${formData.private_family_viewing_total > 0 ? "Yes" : "No"}`,
+    contact_street_address: formData.contact_street_address,
+    contact_city: formData.contact_city,
+    contact_state: formData.contact_state,
+    contact_zip_code: formData.contact_zip_code,
+    transfer_fee: formData.transfer_fee,
+    death_certificates_quantity: formData.death_certificates_quantity,
+    shipping: `${formData.shipping > 0 ? "Yes" : "No, I'll pick up my loved one."}`,
+    total_price: formData.total_price,
+    phone: formData.phone,
+    contact_type: formData.contact_type,
+    contact_time: formData.contact_time,
+    email: "brandon@magnoliacremations.com",
   });
 });
 
