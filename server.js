@@ -14,38 +14,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.post('/calculator-contact', (req, res) => {
-  const { formData } = req.body;
-
-  emailjs.send("service_xg0f1dg","template_ukx3wvz",
-    {
-      name: formData.name,
-      urn_price: formData.urn_price,
-      urn_engraving: `${formData.urn_engraving ? "Yes" : "No"}`,
-      private_family_viewing: `${formData.private_family_viewing_total > 0 ? "Yes" : "No"}`,
-      contact_street_address: formData.contact_street_address,
-      contact_city: formData.contact_city,
-      contact_state: formData.contact_state,
-      contact_zip_code: formData.contact_zip_code,
-      transfer_fee: formData.transfer_fee,
-      death_certificates_quantity: formData.death_certificates_quantity,
-      shipping: `${formData.shipping > 0 ? "Yes" : "No, I'll pick up my loved one."}`,
-      total_price: formData.total_price,
-      phone: formData.phone,
-      contact_type: formData.contact_type,
-      contact_time: formData.contact_time,
-      email: "brandon@magnoliacremations.com",
-    },
-    {
-      publicKey: process.env.EMAILJS_PUBLIC_KEY,
-      privateKey: process.env.EMAILJS_PRIVATE_KEY,
-      limitRate: {
-        throttle: 5000,
-      }
-    }
-  );
-});
-
 app.post('/klaviyo-checkout-event', async (req, res) => {
   const { formData } = req.body;
   const body = `{
