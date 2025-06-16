@@ -14,6 +14,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+emailjs.init({
+  publicKey: process.env.EMAILJS_PUBLIC_KEY,
+  privateKey: process.env.EMAILJS_PRIVATE_KEY,
+});
+
 app.post('/calculator-contact', (req, res) => {
   const { formData } = req.body;
   emailjs.send("service_xg0f1dg","template_ukx3wvz",{
