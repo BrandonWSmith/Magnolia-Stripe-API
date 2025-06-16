@@ -14,16 +14,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-emailjs.init({
-  publicKey: process.env.EMAILJS_PUBLIC_KEY,
-  privateKey: process.env.EMAILJS_PRIVATE_KEY,
-  limitRate: {
-    throttle: 5000,
-  }
-});
-
 app.post('/calculator-contact', (req, res) => {
   const { formData } = req.body;
+
+  emailjs.init({
+    publicKey: process.env.EMAILJS_PUBLIC_KEY,
+    privateKey: process.env.EMAILJS_PRIVATE_KEY,
+    limitRate: {
+      throttle: 5000,
+    }
+  });
+
   emailjs.send("service_xg0f1dg","template_ukx3wvz",{
     name: formData.name,
     urn_price: formData.urn_price,
