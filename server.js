@@ -40,7 +40,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
                 "country":"United States",
                 "region":"${formData.contact_state}",
                 "zip":"${formData.contact_zip_code}"
-              },
+              }
             }
           }
         }
@@ -61,7 +61,8 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(response => console.log(response));
+    .then(response => response.status === 202 ? res.send() : console.log(response))
+    .catch(err => console.error(err));
 });
 
 app.post('/klaviyo-calculator-email', async (req, res) => {
