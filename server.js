@@ -4,7 +4,6 @@ const cors = require('cors');
 const port = process.env.PORT || 11000;
 require('@shopify/shopify-api/adapters/node');
 const { Session, shopifyApi, LATEST_API_VERSION } = require('@shopify/shopify-api');
-const emailjs = require('@emailjs/browser');
 const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
 
 app.use(express.json());
@@ -46,7 +45,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
         }
       }
     }
-  }`
+  }`;
 
   const url = 'https://a.klaviyo.com/api/events';
   const options = {
@@ -61,7 +60,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(response => response.status === 202 ? res.send() : console.log(response))
+    .then(response => response.status === 202 ? res.send() : console.log(response.body))
     .catch(err => console.error(err));
 });
 
@@ -90,7 +89,7 @@ app.post('/klaviyo-calculator-email', async (req, res) => {
         }
       }
     }
-  }`
+  }`;
 
   const url = 'https://a.klaviyo.com/api/events';
   const options = {
