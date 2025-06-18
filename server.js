@@ -14,9 +14,58 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+app.post('/klaviyo-calculator-used', async (req, res) => {
+  const { formData } = req.body;
+  const body = `{
+    "data":{
+      "type":"event",
+      "attributes":{
+        "properties":${JSON.stringify(formData)},
+        "metric":{
+          "data":{
+            "type":"metric",
+            "attributes":{
+              "name":"Calculator Used"
+            }
+          }
+        },
+        "profile":{
+          "data":{
+            "type":"profile",
+            "attributes":{
+              "location":{
+                "address1":"${formData.contact_street_address}",
+                "city":"${formData.contact_city}",
+                "country":"United States",
+                "region":"${formData.contact_state}",
+                "zip":"${formData.contact_zip_code}"
+              },
+            }
+          }
+        }
+      }
+    }
+  }`
+
+  const url = 'https://a.klaviyo.com/api/events';
+  const options = {
+    method: 'POST',
+    headers: {
+      accept: 'application/vnd.api+json',
+      revision: '2025-04-15',
+      'content-type': 'application/vnd.api+json',
+      Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+    },
+    body: body
+  };
+
+  fetch(url, options)
+    .then(response => response.status === 202 ? res.send() : console.log(response))
+    .catch(err => console.error(err));
+});
+
 app.post('/klaviyo-calculator-email', async (req, res) => {
   const { formData } = req.body;
-  console.log(formData);
   const body = `{
     "data":{
       "type":"event",
