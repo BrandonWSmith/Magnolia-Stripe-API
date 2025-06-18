@@ -61,7 +61,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(response => res.json({data: response}));
+    .then(response => console.log(response));
 });
 
 app.post('/klaviyo-calculator-email', async (req, res) => {
