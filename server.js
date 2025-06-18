@@ -62,7 +62,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
 
   fetch(url, options)
     .then(response => response.status === 202 ? res.send() : console.log(response))
-    .catch(err => console.error(err));
+    .catch(err => console.error(err.body));
 });
 
 app.post('/klaviyo-calculator-email', async (req, res) => {
