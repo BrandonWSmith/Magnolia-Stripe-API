@@ -16,6 +16,7 @@ app.use(cors({
 
 app.post('/klaviyo-calculator-used', async (req, res) => {
   const { formData } = req.body;
+  console.log(formData);
   const body = `{
     "data":{
       "type":"event",
