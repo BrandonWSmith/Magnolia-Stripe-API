@@ -13,6 +13,50 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+app.post('/klaviyo-calculator-used', async (req, res) => {
+  const { formData } = req.body;
+  const body = `{
+    "data":{
+      "type":"event",
+      "attributes":{
+        "properties":${JSON.stringify(formData)},
+        "metric":{
+          "data":{
+            "type":"metric",
+            "attributes":{
+              "name":"Calculator Contact"
+            }
+          }
+        },
+        "profile":{
+          "data":{
+            "type":"profile",
+            "attributes":{
+              "email":"hello@magnoliacremations.com"
+            }
+          }
+        }
+      }
+    }
+  }`;
+
+  const url = 'https://a.klaviyo.com/api/events';
+  const options = {
+    method: 'POST',
+    headers: {
+      accept: 'application/vnd.api+json',
+      revision: '2025-04-15',
+      'content-type': 'application/vnd.api+json',
+      Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+    },
+    body: body
+  };
+
+  fetch(url, options)
+    .then(response => response.status === 202 ? res.status(202).send() : console.log(response))
+    .catch(err => console.error(err));
+});
+
 app.post('/klaviyo-calculator-contact', async (req, res) => {
   const { formData } = req.body;
   const body = `{
