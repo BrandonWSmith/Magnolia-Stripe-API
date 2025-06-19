@@ -15,7 +15,6 @@ app.use(cors({
 
 app.post('/klaviyo-calculator-contact', async (req, res) => {
   const { formData } = req.body;
-  console.log(formData);
   const body = `{
     "data":{
       "type":"event",
@@ -54,8 +53,7 @@ app.post('/klaviyo-calculator-contact', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(response => response.json())
-    .then(json => res.json({data: json}))
+    .then(response => res.json({data: response}))
     .catch(err => console.error(err));
 });
 
