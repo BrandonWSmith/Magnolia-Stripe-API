@@ -24,7 +24,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
           "data":{
             "type":"metric",
             "attributes":{
-              "name":"Calculator Contact"
+              "name":"Calculator Used"
             }
           }
         },
