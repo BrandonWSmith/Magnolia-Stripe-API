@@ -13,7 +13,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.post('/klaviyo-calculator-used', async (req, res) => {
+app.post('/klaviyo-calculator-contact', async (req, res) => {
   const { formData } = req.body;
   console.log(formData);
   const body = `{
@@ -25,7 +25,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
           "data":{
             "type":"metric",
             "attributes":{
-              "name":"Calculator Used"
+              "name":"Calculator Contact"
             }
           }
         },
@@ -33,13 +33,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
           "data":{
             "type":"profile",
             "attributes":{
-              "location":{
-                "address1":"${formData.contact_street_address}",
-                "city":"${formData.contact_city}",
-                "country":"United States",
-                "region":"${formData.contact_state}",
-                "zip":"${formData.contact_zip_code}"
-              }
+              "email":"hello@magnoliacremations.com"
             }
           }
         }
@@ -61,7 +55,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
 
   fetch(url, options)
     .then(response => response.json())
-    .then(json => console.log(json))
+    .then(json => res.json({data: json}))
     .catch(err => console.error(err));
 });
 
