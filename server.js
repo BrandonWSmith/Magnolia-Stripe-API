@@ -53,7 +53,7 @@ app.post('/klaviyo-calculator-contact', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(response => res.json({data: response}))
+    .then(response => response.status === 202 ? res.status(202).send() : console.log(response))
     .catch(err => console.error(err));
 });
 
@@ -97,7 +97,7 @@ app.post('/klaviyo-calculator-email', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(response => response.status === 202 ? res.send() : console.log(response))
+    .then(response => response.status === 202 ? res.status(202).send() : console.log(response))
     .catch(err => console.error(err));
 });
 
