@@ -141,7 +141,7 @@ app.post('/klaviyo-calculator-email', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(response => response.status === 202 ? res.status(202).send() : console.log(response))
+    .then(response => response.status === 202 ? res.status(202).json({data: response}) : console.log(response))
     .catch(err => console.error(err));
 });
 
