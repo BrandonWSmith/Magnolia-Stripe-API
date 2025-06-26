@@ -141,8 +141,18 @@ app.post('/klaviyo-calculator-email', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(response => response.status === 202 ? res.status(202).json({data: response}) : console.log(response))
-    .catch(err => console.error(err));
+    .then(response => {
+      if (response.status === 202) {
+        res.status(202).json({data: response});
+      } else {
+        res.json({data: response});
+        console.log(response);
+      }
+    })
+    .catch(err => {
+      res.json({data: err});
+      console.error(err);
+    });
 });
 
 app.post('/klaviyo-checkout-event', async (req, res) => {
