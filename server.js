@@ -265,13 +265,14 @@ app.post('/create-payment-intent', async (req, res) => {
 });
 
 app.post('/create-checkout-session', async (req, res) => {
-  const { price } = req.body;
+  const { price, email } = req.body;
   const session = await stripeTest.checkout.sessions.create({
     mode: 'payment',
     ui_mode: 'custom',
     // permissions: {
     //   update_line_items: 'server_only',
     // },
+    customer_email: email,
     line_items: [
       {
         price_data: {
