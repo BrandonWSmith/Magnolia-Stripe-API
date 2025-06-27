@@ -260,6 +260,38 @@ app.post('/create-payment-intent', async (req, res) => {
   res.json({client_secret: paymentIntent.client_secret});
 });
 
+app.post('/create-checkout-session', async (req, res) => {
+  const { price } = req.body;
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    ui_mode: 'custom',
+    line_items: [
+      {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Donation',
+          },
+          unit_amount: price,
+        },
+        quantity: 1,
+      },
+    ],
+    currency: 'usd',
+    payment_method_types: ['us_bank_account', 'card'],
+    payment_method_options: {
+      us_bank_account: {
+        financial_connections: {
+          permissions: ['payment_method'],
+        },
+      },
+    },
+    return_url: 'magnoliacremations.com',
+  });
+
+  res.json({client_secret: session.client_secret});
+});
+
 app.post('/get-account', async (req, res) => {
   const { paymentIntentId } = req.body;
 
