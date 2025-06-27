@@ -293,6 +293,27 @@ app.post('/create-checkout-session', async (req, res) => {
   res.json({client_secret: session.client_secret});
 });
 
+app.post('/update-checkout-session', async (req, res) => {
+  const { sessionId, price } = req.body;
+
+  await stripeTest.checkout.sessions.update(sessionId, {
+    line_items: [
+      {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Donation',
+          },
+          unit_amount: price,
+        },
+        quantity: 1,
+      },
+    ],
+  });
+
+  res.json({type: 'success'});
+});
+
 app.post('/get-account', async (req, res) => {
   const { paymentIntentId } = req.body;
 
