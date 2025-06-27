@@ -279,7 +279,15 @@ app.post('/create-checkout-session', async (req, res) => {
       },
     ],
     currency: 'usd',
-    return_url: 'magnoliacremations.com',
+    payment_method_types: ['us_bank_account', 'card'],
+    payment_method_options: {
+      us_bank_account: {
+        financial_connections: {
+          permissions: ['payment_method'],
+        },
+      },
+    },
+    return_url: 'https://magnolia-cremations.myshopify.com/',
   });
 
   res.json({client_secret: session.client_secret});
