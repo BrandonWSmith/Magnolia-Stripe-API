@@ -269,9 +269,9 @@ app.post('/create-checkout-session', async (req, res) => {
   const session = await stripeTest.checkout.sessions.create({
     mode: 'payment',
     ui_mode: 'custom',
-    permissions: {
-      update_line_items: 'server_only',
-    },
+    // permissions: {
+    //   update_line_items: 'server_only',
+    // },
     line_items: [
       {
         price_data: {
