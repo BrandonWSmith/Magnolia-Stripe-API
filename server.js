@@ -310,7 +310,7 @@ app.post('/create-checkout-session', async (req, res) => {
     };
   }
 
-  const session = await stripeTest.checkout.sessions.create(sessionSettings);
+  const session = await stripe.checkout.sessions.create(sessionSettings);
 
   res.json({client_secret: session.client_secret});
 });
