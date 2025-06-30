@@ -304,6 +304,10 @@ app.post('/create-checkout-session', async (req, res) => {
         loved_one: loved_one,
       }
     };
+  } else {
+    sessionSettings.payment_intent_data = {
+      description: 'Donation',
+    };
   }
 
   const session = await stripeTest.checkout.sessions.create(sessionSettings);
