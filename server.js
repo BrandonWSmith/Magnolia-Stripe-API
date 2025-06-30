@@ -308,7 +308,7 @@ app.post('/create-checkout-session', async (req, res) => {
 
   const session = await stripeTest.checkout.sessions.create(sessionSettings);
 
-  res.json({client_secret: session.client_secret});
+  res.status(200).json({client_secret: session.client_secret});
 });
 
 app.post('/update-checkout-session', async (req, res) => {
