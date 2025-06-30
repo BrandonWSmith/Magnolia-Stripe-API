@@ -294,7 +294,7 @@ app.post('/create-checkout-session', async (req, res) => {
         },
       },
     },
-    return_url: 'https://magnolia-cremations.myshopify.com/',
+    return_url: 'https://magnolia-cremations.myshopify.com/pages/donation-thank-you',
   };
 
   if (loved_one && loved_one !== '') {
