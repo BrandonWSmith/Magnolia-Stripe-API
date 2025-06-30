@@ -266,6 +266,7 @@ app.post('/create-payment-intent', async (req, res) => {
 
 app.post('/create-checkout-session', async (req, res) => {
   const { price, email, loved_one } = req.body;
+  console.log(loved_one);
   const sessionSettings = {
     mode: 'payment',
     ui_mode: 'custom',
@@ -302,6 +303,8 @@ app.post('/create-checkout-session', async (req, res) => {
       loved_one: loved_one,
     };
   }
+
+  console.log(sessionSettings);
 
   const session = await stripeTest.checkout.sessions.create(sessionSettings);
 
