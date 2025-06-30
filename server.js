@@ -265,8 +265,8 @@ app.post('/create-payment-intent', async (req, res) => {
 });
 
 app.post('/create-checkout-session', async (req, res) => {
-  const { price, email } = req.body;
-  const session = await stripeTest.checkout.sessions.create({
+  const { price, email, loved_one } = req.body;
+  const sessionSettings = {
     mode: 'payment',
     ui_mode: 'custom',
     // permissions: {
@@ -295,7 +295,15 @@ app.post('/create-checkout-session', async (req, res) => {
       },
     },
     return_url: 'https://magnolia-cremations.myshopify.com/',
-  });
+  };
+
+  if (loved_one && loved_one !== '') {
+    sessionSettings.metadata = {
+      loved_one: loved_one,
+    };
+  }
+
+  const session = await stripeTest.checkout.sessions.create(sessionSettings);
 
   res.json({client_secret: session.client_secret});
 });
