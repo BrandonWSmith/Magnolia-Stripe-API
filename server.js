@@ -245,6 +245,24 @@ app.post('/shopify-admin-api', async (req, res) => {
   }
 });
 
+app.post('/opt-in', async (req, res) => {
+  const { email } = req.body;
+  
+  const url = `https://a.klaviyo.com/api/profiles?filter=equals%28email%2C%27${email}%27%29&page[size]=1`;
+  const options = {
+    method: 'GET',
+    headers: {
+      accept: 'application/vnd.api+json',
+      revision: '2025-04-15',
+      Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+    }
+  };
+
+  fetch(url, options)
+    .then(res => res.json())
+    .then(data => console.log(data));
+});
+
 app.post('/create-payment-intent', async (req, res) => {
   const { price } = req.body;
   const paymentIntent = await stripe.paymentIntents.create({
