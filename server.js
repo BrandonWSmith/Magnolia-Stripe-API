@@ -259,7 +259,8 @@ app.post('/opt-in', async (req, res) => {
   };
 
   fetch(url, options)
-    .then(response => console.log(response.body.getReader().read()));
+    .then(response => response.json())
+    .then(data => console.log(data));
 });
 
 app.post('/create-payment-intent', async (req, res) => {
