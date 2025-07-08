@@ -272,7 +272,7 @@ app.post('/opt-in', async (req, res) => {
           'content-type': 'application/vnd.api+json',
           Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
         },
-        body: `{"data":[{"type":"profile","id":${profileId}}]}`
+        body: `{"data":[{"type":"profile","id":"${profileId}"}]}`
       };
 
       fetch(addToListUrl, addToListOptions)
