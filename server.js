@@ -248,8 +248,8 @@ app.post('/shopify-admin-api', async (req, res) => {
 app.post('/opt-in', async (req, res) => {
   const { email } = req.body;
   
-  const url = `https://a.klaviyo.com/api/profiles?filter=equals%28email%2C%27${email}%27%29&page[size]=1`;
-  const options = {
+  const getProfileUrl = `https://a.klaviyo.com/api/profiles?filter=equals%28email%2C%27${email}%27%29&page[size]=1`;
+  const getProfileOptions = {
     method: 'GET',
     headers: {
       accept: 'application/vnd.api+json',
@@ -258,9 +258,26 @@ app.post('/opt-in', async (req, res) => {
     }
   };
 
-  fetch(url, options)
+  let profileId;
+  fetch(getProfileUrl, getProfileOptions)
     .then(response => response.json())
-    .then(data => console.log(data));
+    .then(data => profileId = data.data[0].id)
+    .then(() => {
+      const addToListUrl = 'https://a.klaviyo.com/api/lists/01JSQ28TAEEY145JP992CE4P4F/relationships/profiles';
+      const addToListOptions = {
+        method: 'POST',
+        headers: {
+          accept: 'application/vnd.api+json',
+          revision: '2025-04-15',
+          'content-type': 'application/vnd.api+json',
+          Authorization: 'Klaviyo-API-Key your-private-api-key'
+        },
+        body: '{"data":[{"type":"profile","id":"01JSQ28TAEEY145JP992CE4P4F"}]}'
+      };
+
+      fetch(addToListUrl, addToListOptions)
+        .then(response => res.json({data: response.status}));
+    });
 });
 
 app.post('/create-payment-intent', async (req, res) => {
