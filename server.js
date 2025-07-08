@@ -263,16 +263,16 @@ app.post('/opt-in', async (req, res) => {
     .then(response => response.json())
     .then(data => profileId = data.data[0].id)
     .then(() => {
-      const addToListUrl = 'https://a.klaviyo.com/api/lists/01JSQ28TAEEY145JP992CE4P4F/relationships/profiles';
+      const addToListUrl = 'https://a.klaviyo.com/api/lists/VD4cVf/relationships/profiles';
       const addToListOptions = {
         method: 'POST',
         headers: {
           accept: 'application/vnd.api+json',
           revision: '2025-04-15',
           'content-type': 'application/vnd.api+json',
-          Authorization: 'Klaviyo-API-Key your-private-api-key'
+          Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
         },
-        body: '{"data":[{"type":"profile","id":"01JSQ28TAEEY145JP992CE4P4F"}]}'
+        body: `{"data":[{"type":"profile","id":${profileId}}]}`
       };
 
       fetch(addToListUrl, addToListOptions)
