@@ -276,7 +276,7 @@ app.post('/opt-in', async (req, res) => {
       };
 
       fetch(addToListUrl, addToListOptions)
-        .then(response => console.log(response));
+        .then(response => res.json({data: response.status}));
     });
 });
 
