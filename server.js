@@ -4,7 +4,7 @@ const cors = require('cors');
 const port = process.env.PORT || 11000;
 require('@shopify/shopify-api/adapters/node');
 const { Session, shopifyApi, LATEST_API_VERSION } = require('@shopify/shopify-api');
-const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST);
+const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY);
 // const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST, {
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
