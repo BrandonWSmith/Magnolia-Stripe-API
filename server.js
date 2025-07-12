@@ -415,6 +415,8 @@ app.post('/store-form-data', (req, res) => {
 
 app.get('/get-form-data', (req, res) => {
   console.log(ip);
+  console.log(req.headers['x-forward-for']);
+  console.log(req.socket.remoteAddress);
   if (req.headers['x-forward-for'] === ip || req.socket.remoteAddress === ip) {
     res.json({hulkFormData: hulkFormData});
   } else {
