@@ -408,15 +408,15 @@ app.post('/store-form-data', (req, res) => {
   const { formData } = req.body;
   ip = req.headers['x-forward-for'] || req.socket.remoteAddress;
   hulkFormData = formData;
-  console.log(ip);
+  console.log("set ip: ", ip);
 
   res.status(201).json({message: "Form data temporarily stored on server", url: "https://magnolia-cremations.myshopify.com/pages/plan-ahead-payment"});
 });
 
 app.get('/get-form-data', (req, res) => {
-  console.log(ip);
-  console.log(req.headers['x-forward-for']);
-  console.log(req.socket.remoteAddress);
+  console.log("stored ip: ", ip);
+  console.log("req.headers: ", req.headers['x-forward-for']);
+  console.log("req.socket: ", req.socket.remoteAddress);
   if (req.headers['x-forward-for'] === ip || req.socket.remoteAddress === ip) {
     res.json({hulkFormData: hulkFormData});
   } else {
