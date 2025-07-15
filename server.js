@@ -435,6 +435,7 @@ app.post('/get-payment-intent', async (req, res) => {
 });
 
 app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
+  console.log(req.body);
   let event = req.body;
 
   if (webhookSecret) {
