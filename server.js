@@ -281,7 +281,12 @@ app.post('/opt-in', async (req, res) => {
 });
 
 app.post('/create-payment-intent', async (req, res) => {
-  const { price } = req.body;
+  const { price, formData } = req.body;
+  delete formData.preplanning_options_addTransferFee;
+  delete formData.preplanning_options_transferFee;
+  delete formData.preplanning_options_transferFeeCalculated;
+  delete formData.preplanning_options_addShipping;
+  delete formData.preplanning_options_stepCompleted;
   const paymentIntent = await stripe.paymentIntents.create({
     amount: price,
     currency: 'usd',
@@ -294,6 +299,8 @@ app.post('/create-payment-intent', async (req, res) => {
         },
       },
     },
+    description: `Purchaser: ${formData.contact_first_name} ${formData.contact_last_name}`,
+    metadata: formData,
   });
 
   res.json({client_secret: paymentIntent.client_secret});
