@@ -281,6 +281,7 @@ app.post('/opt-in', async (req, res) => {
 
 app.post('/create-payment-intent', async (req, res) => {
   const { price, formData } = req.body;
+  console.log(formData);
   const paymentIntent = await stripe.paymentIntents.create({
     amount: price,
     currency: 'usd',
@@ -294,7 +295,7 @@ app.post('/create-payment-intent', async (req, res) => {
       },
     },
     description: `Purchaser: ${formData.contact_first_name} ${formData.contact_last_name}`,
-    metadata: {formData: JSON.stringify(formData)},
+    metadata: JSON.stringify(formData),
   });
 
   res.json({client_secret: paymentIntent.client_secret});
