@@ -483,7 +483,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       },
       body: JSON.stringify({queryString: queryString, variables: variables}),
     })
-    .then(response => response.status === 200 ? res.send() : console.log(response.json().data.body.errors));
+    .then(response => response.status === 200 ? res.send() : console.log(response.json()));
   } else if (event.type === 'payment_intent.payment_failed') {
     const paymentIntent = event.data.object;
     console.log(`PaymentIntent failed! ID: ${paymentIntent.id}`);
