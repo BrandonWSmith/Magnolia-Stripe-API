@@ -310,6 +310,7 @@ app.post('/create-payment-intent', async (req, res) => {
   delete formData.preplanning_options_transferFeeCalculated;
   delete formData.preplanning_options_addShipping;
   delete formData.preplanning_options_stepCompleted;
+  console.log(formData);
   const paymentIntent = await stripe.paymentIntents.create({
     amount: price,
     currency: 'usd',
