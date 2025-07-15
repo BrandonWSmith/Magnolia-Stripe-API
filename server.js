@@ -10,7 +10,13 @@ const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY);
 // });
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-app.use(express.json());
+app.use((req, res, next) => {
+  if (req.originalUrl === '/webhook') {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
   origin: '*',
