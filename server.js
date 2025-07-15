@@ -9,8 +9,15 @@ const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST);
 // const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST, {
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-app.use(express.json());
+app.use((req, res, next) => {
+  if (req.originalUrl === '/webhook') {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
   origin: '*',
@@ -330,6 +337,18 @@ app.post('/create-payment-intent', async (req, res) => {
   res.json({client_secret: paymentIntent.client_secret});
 });
 
+app.post('/update-payment-intent', (req, res) => {
+  const { paymentIntentId, orderId } = req.body;
+
+  stripe.paymentIntents.update(paymentIntentId, {
+    metadata: {
+      order_id: orderId,
+    },
+  });
+
+  res.json();
+});
+
 app.post('/create-checkout-session', async (req, res) => {
   const { price, email, loved_one } = req.body;
   const sessionSettings = {
@@ -430,6 +449,58 @@ app.post('/get-payment-intent', async (req, res) => {
   );
 
   res.json({paymentIntent: paymentIntent});
+});
+
+app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+  let event = req.body;
+
+  if (webhookSecret) {
+    const signature = req.headers['stripe-signature'];
+    try {
+      event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
+    } catch (err) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return res.sendStatus(400);
+    }
+  }
+
+  if (event.type === 'payment_intent.succeeded') {
+    const paymentIntent = event.data.object;
+    console.log(`PaymentIntent was successful! ID: ${paymentIntent.id}`);
+
+    const queryString = `mutation orderMarkAsPaid($input: OrderMarkAsPaidInput!) {
+      orderMarkAsPaid(input: $input) {
+        userErrors {
+          field
+          message
+        }
+        order {
+          id
+        }
+      }
+    }`;
+
+    const variables = {
+      'input': {
+        'id': paymentIntent.metadata.order_id,
+      }
+    };
+
+    await fetch('https://magnolia-api.onrender.com/shopify-admin-api', 
+    {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: queryString, variables: variables}),
+    })
+    .then(response => response.status === 200 ? res.send() : console.log(response));
+  } else if (event.type === 'payment_intent.payment_failed') {
+    const paymentIntent = event.data.object;
+    console.log(`PaymentIntent failed! ID: ${paymentIntent.id}`);
+  }
+
+  res.send();
 });
 
 let ip;
