@@ -295,7 +295,7 @@ app.post('/create-payment-intent', async (req, res) => {
       },
     },
     description: `Purchaser: ${formData.contact_first_name} ${formData.contact_last_name}`,
-    metadata: JSON.stringify(formData),
+    metadata: formData,
   });
 
   res.json({client_secret: paymentIntent.client_secret});
