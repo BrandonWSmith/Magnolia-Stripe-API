@@ -483,7 +483,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 
     const variables = {
       'input': {
-        //'id': 'gid://shopify/Order/8126041620786',
+        'id': paymentIntent.metadata.order_id,
       }
     };
 
