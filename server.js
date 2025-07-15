@@ -282,6 +282,30 @@ app.post('/opt-in', async (req, res) => {
 
 app.post('/create-payment-intent', async (req, res) => {
   const { price, formData } = req.body;
+  delete formData.purchaser_first_name;
+  delete formData.purchaser_middle_name;
+  delete formData.purchaser_last_name;
+  delete formData.purchaser_suffix;
+  delete formData.purchaser_email;
+  delete formData.purchaser_phone;
+  delete formData.purchaser_street_address;
+  delete formData.purchaser_city;
+  delete formData.purchaser_state;
+  delete formData.purchaser_zip_code;
+  delete formData.purchaser_relationship;
+  delete formData.pick_up_location_location_type;
+  delete formData.pick_up_location_facility_name;
+  delete formData.pick_up_location_street_address;
+  delete formData.pick_up_location_city;
+  delete formData.pick_up_location_state;
+  delete formData.pick_up_location_zip_code;
+  delete formData.place_of_passing_location_type;
+  delete formData.place_of_passing_facility_name;
+  delete formData.place_of_passing_street_address;
+  delete formData.place_of_passing_city;
+  delete formData.place_of_passing_state;
+  delete formData.place_of_passing_zip_code;
+  delete formData.deceased_date_death;
   delete formData.preplanning_options_addTransferFee;
   delete formData.preplanning_options_transferFee;
   delete formData.preplanning_options_transferFeeCalculated;
