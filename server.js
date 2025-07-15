@@ -311,6 +311,7 @@ app.post('/create-payment-intent', async (req, res) => {
   delete formData.preplanning_options_addShipping;
   delete formData.preplanning_options_stepCompleted;
   console.log(formData);
+
   const paymentIntent = await stripe.paymentIntents.create({
     amount: price,
     currency: 'usd',
@@ -430,6 +431,20 @@ app.post('/get-payment-intent', async (req, res) => {
   );
 
   res.json({paymentIntent: paymentIntent});
+});
+
+app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
+  let event = req.body;
+
+  if (event.type === 'payment_intent.succeeded') {
+    const paymentIntent = event.data.object;
+    console.log(`PaymentIntent was successful! ID: ${paymentIntent.id}`);
+  } else if (event.type === 'payment_intent.payment_failed') {
+    const paymentIntent = event.data.object;
+    console.log(`PaymentIntent failed! ID: ${paymentIntent.id}`);
+  }
+
+  res.send();
 });
 
 let ip;
