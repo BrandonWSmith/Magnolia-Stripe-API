@@ -457,8 +457,8 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
     const paymentIntent = event.data.object;
     console.log(`PaymentIntent was successful! ID: ${paymentIntent.id}`);
 
-    const queryString = `mutation OrderUpdate($input: OrderInput!) {
-      orderUpdate(input: $input) {
+    const queryString = `mutation orderMarkAsPaid($input: OrderMarkAsPaidInput!) {
+      orderMarkAsPaid(input: $input) {
         userErrors {
           field
           message
@@ -472,11 +472,6 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
     const variables = {
       'input': {
         'id': 'gid://shopify/Order/8126041620786',
-        'transactions': [
-          {
-            'status': 'SUCCESS',
-          }
-        ]
       }
     };
 
@@ -489,7 +484,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       body: JSON.stringify({queryString: queryString, variables: variables}),
     })
     .then(response => response.json())
-    .then(data => console.log(data.data.body.errors));
+    .then(data => console.log(data.data.body));
   } else if (event.type === 'payment_intent.payment_failed') {
     const paymentIntent = event.data.object;
     console.log(`PaymentIntent failed! ID: ${paymentIntent.id}`);
