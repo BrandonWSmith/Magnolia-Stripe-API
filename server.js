@@ -302,7 +302,7 @@ app.post('/create-payment-intent', async (req, res) => {
         },
       },
     },
-    description: `Purchaser: ${formData.contact_first_name} ${formData.contact_last_name}`,
+    description: `Purchaser: ${JSON.parse(formData.contact).first_name} ${JSON.parse(formData.contact).last_name}`,
     metadata: formData,
   });
 
