@@ -288,7 +288,6 @@ app.post('/opt-in', async (req, res) => {
 
 app.post('/create-payment-intent', async (req, res) => {
   const { price, formData } = req.body;
-  console.log(formData);
 
   const paymentIntent = await stripe.paymentIntents.create({
     amount: price,
