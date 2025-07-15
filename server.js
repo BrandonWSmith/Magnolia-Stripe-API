@@ -441,12 +441,11 @@ app.post('/get-payment-intent', async (req, res) => {
 });
 
 app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
-  console.log(req.body);
   let event = req.body;
 
   if (webhookSecret) {
-    console.log('Verifying webhook signature');
     const signature = req.headers['stripe-signature'];
+    console.log(signature);
     try {
       event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
     } catch (err) {
