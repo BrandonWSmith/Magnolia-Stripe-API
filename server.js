@@ -338,6 +338,18 @@ app.post('/create-payment-intent', async (req, res) => {
   res.json({client_secret: paymentIntent.client_secret});
 });
 
+app.post('/update-payment-intent', (req, res) => {
+  const { paymentIntentId, orderId } = req.body;
+
+  stripe.paymentIntents.update(paymentIntentId, {
+    metadata: {
+      order_id: orderId,
+    },
+  });
+
+  res.json();
+});
+
 app.post('/create-checkout-session', async (req, res) => {
   const { price, email, loved_one } = req.body;
   const sessionSettings = {
