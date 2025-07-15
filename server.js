@@ -471,7 +471,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 
     const variables = {
       'input': {
-        'id': 'gid://shopify/Order/8126041620786',
+        //'id': 'gid://shopify/Order/8126041620786',
       }
     };
 
@@ -483,8 +483,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       },
       body: JSON.stringify({queryString: queryString, variables: variables}),
     })
-    .then(response => response.json())
-    .then(data => console.log(data.data.body));
+    .then(response => response.status === 200 ? res.send() : console.log(response.json().data.body.errors));
   } else if (event.type === 'payment_intent.payment_failed') {
     const paymentIntent = event.data.object;
     console.log(`PaymentIntent failed! ID: ${paymentIntent.id}`);
