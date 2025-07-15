@@ -8,6 +8,7 @@ const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY);
 // const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST, {
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -435,6 +436,16 @@ app.post('/get-payment-intent', async (req, res) => {
 
 app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
   let event = req.body;
+
+  if (webhookSecret) {
+    const signature = req.headers['stripe-signature'];
+    try {
+      event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
+    } catch (err) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return res.sendStatus(400);
+    }
+  }
 
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
