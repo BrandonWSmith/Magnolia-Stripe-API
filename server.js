@@ -440,12 +440,11 @@ app.post('/get-payment-intent', async (req, res) => {
   res.json({paymentIntent: paymentIntent});
 });
 
-app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
+app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
   let event = req.body;
 
   if (webhookSecret) {
     const signature = req.headers['stripe-signature'];
-    console.log(signature);
     try {
       event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
     } catch (err) {
@@ -457,6 +456,40 @@ app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
     console.log(`PaymentIntent was successful! ID: ${paymentIntent.id}`);
+
+    const queryString = `mutation OrderUpdate($input: OrderInput!) {
+      orderUpdate(input: $input) {
+        userErrors {
+          field
+          message
+        }
+        order {
+          id
+        }
+      }
+    }`;
+
+    const variables = {
+      'input': {
+        'id': 'gid://shopify/Order/8126041620786',
+        'transactions': [
+          {
+            'status': 'SUCCESS',
+          }
+        ]
+      }
+    };
+
+    await fetch('https://magnolia-api.onrender.com/shopify-admin-api', 
+    {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: queryString, variables: variables}),
+    })
+    .then(res => res.json())
+    .then(data => console.log(data.data));
   } else if (event.type === 'payment_intent.payment_failed') {
     const paymentIntent = event.data.object;
     console.log(`PaymentIntent failed! ID: ${paymentIntent.id}`);
