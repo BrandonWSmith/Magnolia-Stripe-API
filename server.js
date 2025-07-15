@@ -480,7 +480,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       }
     };
 
-    await fetch('https://magnolia-api.onrender.com/shopify-admin-api', 
+    await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', 
     {
       method: 'POST',
       headers: {
