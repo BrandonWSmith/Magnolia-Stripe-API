@@ -335,22 +335,29 @@ app.post('/prepare-payment', async (req, res) => {
 
     let insufficientFunds = false;
     let balanceAmount = null;
+    let isInstantVerification = false;
 
-    // For ACH payments, we can use the FinancialConnections API to get account balance
-    const account = await stripe.financialConnections.accounts.retrieve(
-      paymentMethod.us_bank_account.financial_connections_account
-    );
+    // Check if it's an instant verification account
+    if (paymentMethod.us_bank_account && paymentMethod.us_bank_account.financial_connections_account) {
+      isInstantVerification = true;
+      const account = await stripe.financialConnections.accounts.retrieve(
+        paymentMethod.us_bank_account.financial_connections_account
+      );
 
-    if (account.balance && account.balance.current) {
-      balanceAmount = account.balance.current.usd;
-      insufficientFunds = balanceAmount < amount;
+      if (account.balance && account.balance.current) {
+        balanceAmount = account.balance.current.usd;
+        insufficientFunds = balanceAmount < amount;
+      }
+    } else {
+      // This is a micro-deposit verification account
+      isInstantVerification = false;
     }
 
     res.json({ 
       success: true, 
       insufficientFunds, 
       balanceAmount,
-      paymentMethodType: paymentMethod.type 
+      isInstantVerification
     });
   } catch (error) {
     console.error('Error in prepare-payment:', error);
