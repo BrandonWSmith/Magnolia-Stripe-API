@@ -402,12 +402,16 @@ app.post('/get-account', async (req, res) => {
     }
   );
 
+  console.log(paymentIntent);
+
   const account = await stripe.financialConnections.accounts.retrieve(
     paymentIntent.payment_method.us_bank_account.financial_connections_account,
     {
       expand: ['ownership'],
     }
   );
+
+  console.log(account);
 
   res.json({account: account, paymentMethod: paymentIntent.payment_method});
 });
