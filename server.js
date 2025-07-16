@@ -437,30 +437,6 @@ app.post('/update-checkout-session', async (req, res) => {
   res.json({type: 'success'});
 });
 
-app.post('/get-account', async (req, res) => {
-  const { paymentIntentId } = req.body;
-
-  const paymentIntent = await stripe.paymentIntents.retrieve(
-    paymentIntentId,
-    {
-      expand: ['payment_method'],
-    }
-  );
-
-  console.log(paymentIntent);
-
-  const account = await stripe.financialConnections.accounts.retrieve(
-    paymentIntent.payment_method.us_bank_account.financial_connections_account,
-    {
-      expand: ['ownership'],
-    }
-  );
-
-  console.log(account);
-
-  res.json({account: account, paymentMethod: paymentIntent.payment_method});
-});
-
 app.post('/get-payment-intent', async (req, res) => {
   const { paymentIntentId } = req.body;
 
@@ -486,7 +462,6 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
-    console.log(`PaymentIntent was successful! ID: ${paymentIntent.id}`);
 
     const queryString = `mutation orderMarkAsPaid($input: OrderMarkAsPaidInput!) {
       orderMarkAsPaid(input: $input) {
