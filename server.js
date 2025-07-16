@@ -346,11 +346,6 @@ app.post('/prepare-payment', async (req, res) => {
       insufficientFunds = balanceAmount < amount;
     }
 
-    console.log('Amount:', amount);
-    console.log('Account', account);
-    console.log('Balance Amount:', balanceAmount);
-    console.log('Insufficient Funds:', insufficientFunds);
-
     res.json({ 
       success: true, 
       insufficientFunds, 
