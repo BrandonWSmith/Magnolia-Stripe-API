@@ -342,8 +342,11 @@ app.post('/prepare-payment', async (req, res) => {
     );
 
     if (account.balance && account.balance.current) {
-      balanceAmount = account.balance.current.cash.amount;
-      insufficientFunds = balanceAmount < amount;
+      const usdBalance = account.balance.current.find(bal => bal.currency === 'usd');
+      if (usdBalance) {
+        balanceAmount = usdBalance.amount;
+        insufficientFunds = balanceAmount < amount;
+      }
     }
 
     res.json({ 
