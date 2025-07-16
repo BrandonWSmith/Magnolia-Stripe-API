@@ -358,6 +358,14 @@ app.post('/prepare-payment', async (req, res) => {
   }
 });
 
+app.post('/cancel-payment', async (req, res) => {
+  const { paymentIntentId } = req.body;
+
+  const paymentIntent = await stripe.paymentIntents.cancel(paymentIntentId);
+
+  res.json({data: paymentIntent});
+});
+
 app.post('/create-checkout-session', async (req, res) => {
   const { price, email, loved_one } = req.body;
   const sessionSettings = {
