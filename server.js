@@ -347,6 +347,7 @@ app.post('/prepare-payment', async (req, res) => {
     }
 
     console.log('Amount:', amount);
+    console.log('Account', account);
     console.log('Balance Amount:', balanceAmount);
     console.log('Insufficient Funds:', insufficientFunds);
 
