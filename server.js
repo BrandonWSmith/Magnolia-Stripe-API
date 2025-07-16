@@ -320,6 +320,44 @@ app.post('/update-payment-intent', (req, res) => {
   res.json();
 });
 
+app.post('/prepare-payment', async (req, res) => {
+  try {
+    const { paymentIntentId, paymentMethodId, amount } = req.body;
+
+    // Attach the PaymentMethod to the PaymentIntent
+    await stripe.paymentIntents.update(
+      paymentIntentId,
+      { payment_method: paymentMethodId }
+    );
+
+    // Retrieve the PaymentMethod details
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+
+    let insufficientFunds = false;
+    let balanceAmount = null;
+
+    // For ACH payments, we can use the FinancialConnections API to get account balance
+    const account = await stripe.financialConnections.accounts.retrieve(
+      paymentMethod.us_bank_account.financial_connections_account
+    );
+
+    if (account.balance && account.balance.current) {
+      balanceAmount = account.balance.current.cash.amount;
+      insufficientFunds = balanceAmount < amount;
+    }
+
+    res.json({ 
+      success: true, 
+      insufficientFunds, 
+      balanceAmount,
+      paymentMethodType: paymentMethod.type 
+    });
+  } catch (error) {
+    console.error('Error in prepare-payment:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.post('/create-checkout-session', async (req, res) => {
   const { price, email, loved_one } = req.body;
   const sessionSettings = {
