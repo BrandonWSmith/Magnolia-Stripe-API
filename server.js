@@ -342,7 +342,7 @@ app.post('/prepare-payment', async (req, res) => {
     );
 
     if (account.balance && account.balance.current) {
-      balanceAmount = account.balance.current.available;
+      balanceAmount = account.balance.current.usd;
       insufficientFunds = balanceAmount < amount;
     }
 
