@@ -305,7 +305,7 @@ app.post('/create-payment-intent', async (req, res) => {
     metadata: formData,
   });
 
-  res.json({client_secret: paymentIntent.client_secret});
+  res.json({client_secret: paymentIntent.client_secret, id: paymentIntent.id});
 });
 
 app.post('/update-payment-intent', (req, res) => {
