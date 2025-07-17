@@ -321,6 +321,51 @@ app.post('/update-payment-intent', (req, res) => {
   res.json();
 });
 
+app.post('/prepare-payment', async (req, res) => {
+  try {
+    const { paymentIntentId, paymentMethodId, amount } = req.body;
+
+    // Attach the PaymentMethod to the PaymentIntent
+    await stripe.paymentIntents.update(
+      paymentIntentId,
+      { payment_method: paymentMethodId }
+    );
+
+    // Retrieve the PaymentMethod details
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+
+    let insufficientFunds = false;
+    let balanceAmount = null;
+    let isInstantVerification = false;
+
+    // Check if it's an instant verification account
+    if (paymentMethod.us_bank_account && paymentMethod.us_bank_account.financial_connections_account) {
+      isInstantVerification = true;
+      const account = await stripe.financialConnections.accounts.retrieve(
+        paymentMethod.us_bank_account.financial_connections_account
+      );
+
+      if (account.balance && account.balance.current) {
+        balanceAmount = account.balance.current.usd;
+        insufficientFunds = balanceAmount < amount;
+      }
+    } else {
+      // This is a micro-deposit verification account
+      isInstantVerification = false;
+    }
+
+    res.json({ 
+      success: true, 
+      insufficientFunds, 
+      balanceAmount,
+      isInstantVerification
+    });
+  } catch (error) {
+    console.error('Error in prepare-payment:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.post('/create-checkout-session', async (req, res) => {
   const { price, email, loved_one } = req.body;
   const sessionSettings = {
@@ -393,26 +438,6 @@ app.post('/update-checkout-session', async (req, res) => {
   res.json({type: 'success'});
 });
 
-app.post('/get-account', async (req, res) => {
-  const { paymentIntentId } = req.body;
-
-  const paymentIntent = await stripe.paymentIntents.retrieve(
-    paymentIntentId,
-    {
-      expand: ['payment_method'],
-    }
-  );
-
-  const account = await stripe.financialConnections.accounts.retrieve(
-    paymentIntent.payment_method.us_bank_account.financial_connections_account,
-    {
-      expand: ['ownership'],
-    }
-  );
-
-  res.json({account: account, paymentMethod: paymentIntent.payment_method});
-});
-
 app.post('/get-payment-intent', async (req, res) => {
   const { paymentIntentId } = req.body;
 
@@ -438,7 +463,6 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = event.data.object;
-    console.log(`PaymentIntent was successful! ID: ${paymentIntent.id}`);
 
     const queryString = `mutation orderMarkAsPaid($input: OrderMarkAsPaidInput!) {
       orderMarkAsPaid(input: $input) {
