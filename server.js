@@ -365,6 +365,37 @@ app.post('/prepare-payment', async (req, res) => {
   }
 });
 
+app.post('/retrieve-payment-intent', async (req, res) => {
+  const { paymentIntentId } = req.body;
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    // Valid states would typically be those where payment hasn't been completed
+    const validStates = ['requires_payment_method', 'requires_confirmation', 'requires_action'];
+    const isValid = validStates.includes(paymentIntent.status);
+    
+    if (isValid) {
+      res.json({
+        success: true,
+        clientSecret: paymentIntent.client_secret,
+        metadata: paymentIntent.metadata,
+      });
+    } else {
+      res.json({
+        success: false,
+        reason: `Payment intent is in ${paymentIntent.status} state`
+      });
+    }
+  } catch (error) {
+    console.error('Error retrieving PaymentIntent:', error);
+    res.json({
+      success: false,
+      reason: 'Payment intent not found'
+    });
+  }
+});
+
 app.post('/resume-payment-by-email', async (req, res) => {
   try {
     const { email } = req.body;
