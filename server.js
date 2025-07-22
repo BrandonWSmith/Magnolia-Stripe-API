@@ -366,6 +366,51 @@ app.post('/prepare-payment', async (req, res) => {
   }
 });
 
+app.post('/resume-payment-by-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Search for Payment Intents with this email
+    const paymentIntents = await stripe.paymentIntents.list({
+      limit: 50,
+    });
+
+    // Filter for pending payments that match the email
+    const pendingPayments = paymentIntents.data.filter(pi => {
+      const customerEmail = JSON.parse(pi.metadata.contact || '{}').email;
+      return (
+        (pi.status === 'requires_payment_method' || 
+         pi.status === 'requires_confirmation' || 
+         pi.status === 'requires_action') &&
+        (pi.receipt_email === email || customerEmail === email)
+      );
+    });
+
+    if (pendingPayments.length === 0) {
+      return res.json([]);
+    }
+
+    // Format the response data
+    const formattedPayments = pendingPayments.map(pi => {     
+      return {
+        paymentIntentId: pi.id,
+        clientSecret: pi.client_secret,
+        metadata: pi.metadata
+      };
+    });
+
+    res.json(formattedPayments);
+    
+  } catch (error) {
+    console.error('Error retrieving payments by email:', error);
+    res.status(500).json({ error: 'Failed to retrieve payment information' });
+  }
+});
+
 app.post('/create-checkout-session', async (req, res) => {
   const { price, email, loved_one } = req.body;
   const sessionSettings = {
