@@ -253,9 +253,9 @@ app.post('/shopify-admin-api', async (req, res) => {
 });
 
 app.post('/opt-in', async (req, res) => {
-  const { email } = req.body;
+  const { formData } = req.body;
   
-  const getProfileUrl = `https://a.klaviyo.com/api/profiles?filter=equals%28email%2C%27${email}%27%29&page[size]=1`;
+  const getProfileUrl = `https://a.klaviyo.com/api/profiles?filter=equals%28email%2C%27${formData.contact_email}%27%29&page[size]=1`;
   const getProfileOptions = {
     method: 'GET',
     headers: {
@@ -265,25 +265,73 @@ app.post('/opt-in', async (req, res) => {
     }
   };
 
-  let profileId;
   fetch(getProfileUrl, getProfileOptions)
     .then(response => response.json())
-    .then(data => profileId = data.data[0].id)
-    .then(() => {
-      const addToListUrl = 'https://a.klaviyo.com/api/lists/VD4cVf/relationships/profiles';
-      const addToListOptions = {
-        method: 'POST',
-        headers: {
-          accept: 'application/vnd.api+json',
-          revision: '2025-04-15',
-          'content-type': 'application/vnd.api+json',
-          Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
-        },
-        body: `{"data":[{"type":"profile","id":"${profileId}"}]}`
-      };
+    .then(data => {
+      if (data.data[0]) {
+        const addToListUrl = 'https://a.klaviyo.com/api/lists/VD4cVf/relationships/profiles';
+        const addToListOptions = {
+          method: 'POST',
+          headers: {
+            accept: 'application/vnd.api+json',
+            revision: '2025-04-15',
+            'content-type': 'application/vnd.api+json',
+            Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+          },
+          body: `{"data":[{"type":"profile","id":"${data.data[0].id}"}]}`
+        };
 
-      fetch(addToListUrl, addToListOptions)
-        .then(response => res.json({data: response.status}));
+        fetch(addToListUrl, addToListOptions)
+          .then(response => res.json({data: response.status}));
+      } else {
+        const createProfileUrl = 'https://a.klaviyo.com/api/profiles';
+        const createProfileOptions = {
+          method: 'POST',
+          headers: {
+            accept: 'application/vnd.api+json',
+            revision: '2025-07-15',
+            'content-type': 'application/vnd.api+json',
+            Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+          },
+          body: `{
+            "data":{
+              "type":"profile",
+              "attributes":{
+                "location":{
+                  "address1":"${formData.contact_street_address}",
+                  "city":"${formData.contact_city}",
+                  "country":"United States",
+                  "region":"${formData.contact_state}",
+                  "zip":"${formData.contact_zip_code}"
+                },
+                "email":"${formData.contact_email}",
+                "phone_number":"+1${formData.contact_phone.replaceAll("-", "")}",
+                "first_name":"${formData.contact_first_name}",
+                "last_name":"${formData.contact_last_name}"
+              }
+            }
+          }`
+        };
+
+        fetch(createProfileUrl, createProfileOptions)
+          .then(response => response.json())
+          .then(data => {
+            const addToListUrl = 'https://a.klaviyo.com/api/lists/VD4cVf/relationships/profiles';
+            const addToListOptions = {
+              method: 'POST',
+              headers: {
+                accept: 'application/vnd.api+json',
+                revision: '2025-04-15',
+                'content-type': 'application/vnd.api+json',
+                Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+              },
+              body: `{"data":[{"type":"profile","id":"${data.data.id}"}]}`
+            };
+
+            fetch(addToListUrl, addToListOptions)
+              .then(response => res.json({data: response.status}));
+          });
+      }
     });
 });
 
