@@ -316,9 +316,20 @@ app.post('/update-payment-intent', async (req, res) => {
       return res.status(400).json({ error: 'Valid payment intent ID is required' });
     }
 
-    await stripe.paymentIntents.update(paymentIntentId, {
-      metadata: {}
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const existingMetadataKeys = Object.keys(paymentIntent.metadata || {});
+    
+
+    const metadataClear = {};
+    existingMetadataKeys.forEach(key => {
+      metadataClear[key] = '';
     });
+    
+    if (existingMetadataKeys.length > 0) {
+      await stripe.paymentIntents.update(paymentIntentId, {
+        metadata: metadataClear
+      });
+    }
     
     const updatedPaymentIntent = await stripe.paymentIntents.update(
       paymentIntentId,
