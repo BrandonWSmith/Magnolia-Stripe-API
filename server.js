@@ -309,16 +309,47 @@ app.post('/create-payment-intent', async (req, res) => {
     res.json({client_secret: paymentIntent.client_secret, id: paymentIntent.id});
 });
 
-app.post('/update-payment-intent', (req, res) => {
-  const { paymentIntentId, orderId } = req.body;
+app.post('/update-payment-intent', async (req, res) => {
+  try {
+    const { paymentIntentId, metadata, price } = req.body;
+    
+    if (!paymentIntentId || paymentIntentId === '') {
+      return res.status(400).json({ error: 'Valid payment intent ID is required' });
+    }
 
-  stripe.paymentIntents.update(paymentIntentId, {
-    metadata: {
-      order_id: orderId,
-    },
-  });
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const existingMetadataKeys = Object.keys(paymentIntent.metadata || {});
+    
 
-  res.json();
+    const metadataClear = {};
+    existingMetadataKeys.forEach(key => {
+      metadataClear[key] = '';
+    });
+    
+    if (existingMetadataKeys.length > 0) {
+      await stripe.paymentIntents.update(paymentIntentId, {
+        metadata: metadataClear
+      });
+    }
+
+    const updateParams = {
+      metadata: metadata
+    };
+    
+    if (price !== undefined) {
+      updateParams.amount = price;
+    }
+    
+    const updatedPaymentIntent = await stripe.paymentIntents.update(
+      paymentIntentId,
+      updateParams
+    );
+    
+    res.json({ success: true, paymentIntent: updatedPaymentIntent });
+  } catch (error) {
+    console.error('Error updating payment intent:', error);
+    res.status(400).json({ error: error.message });
+  }
 });
 
 app.post('/prepare-payment', async (req, res) => {
@@ -363,6 +394,37 @@ app.post('/prepare-payment', async (req, res) => {
   } catch (error) {
     console.error('Error in prepare-payment:', error);
     res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/retrieve-payment-intent', async (req, res) => {
+  const { paymentIntentId } = req.body;
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    // Valid states would typically be those where payment hasn't been completed
+    const validStates = ['requires_payment_method', 'requires_confirmation', 'requires_action'];
+    const isValid = validStates.includes(paymentIntent.status);
+    
+    if (isValid) {
+      res.json({
+        success: true,
+        clientSecret: paymentIntent.client_secret,
+        metadata: paymentIntent.metadata,
+      });
+    } else {
+      res.json({
+        success: false,
+        reason: `Payment intent is in ${paymentIntent.status} state`
+      });
+    }
+  } catch (error) {
+    console.error('Error retrieving PaymentIntent:', error);
+    res.json({
+      success: false,
+      reason: 'Payment intent not found'
+    });
   }
 });
 
