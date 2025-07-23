@@ -315,6 +315,10 @@ app.post('/update-payment-intent', async (req, res) => {
     if (!paymentIntentId || paymentIntentId === '') {
       return res.status(400).json({ error: 'Valid payment intent ID is required' });
     }
+
+    await stripe.paymentIntents.update(paymentIntentId, {
+      metadata: {}
+    });
     
     const updatedPaymentIntent = await stripe.paymentIntents.update(
       paymentIntentId,
