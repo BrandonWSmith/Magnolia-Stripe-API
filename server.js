@@ -253,6 +253,7 @@ app.post('/shopify-admin-api', async (req, res) => {
 
 app.post('/opt-in', async (req, res) => {
   const { formData } = req.body;
+  console.log("formData: ", formData);
   
   const getProfileUrl = `https://a.klaviyo.com/api/profiles?filter=equals%28email%2C%27${formData.contact_email}%27%29&page[size]=1`;
   const getProfileOptions = {
