@@ -267,7 +267,8 @@ app.post('/opt-in', async (req, res) => {
   fetch(getProfileUrl, getProfileOptions)
     .then(response => response.json())
     .then(data => {
-      if (data.data[0]) {
+      console.log(data);
+      if (data.data.length > 0) {
         const addToListUrl = 'https://a.klaviyo.com/api/lists/VD4cVf/relationships/profiles';
         const addToListOptions = {
           method: 'POST',
