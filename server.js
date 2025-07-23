@@ -267,8 +267,7 @@ app.post('/opt-in', async (req, res) => {
   fetch(getProfileUrl, getProfileOptions)
     .then(response => response.json())
     .then(data => {
-      console.log(data);
-      if (data.data.length > 0) {
+      if (data.data[0]) {
         const addToListUrl = 'https://a.klaviyo.com/api/lists/VD4cVf/relationships/profiles';
         const addToListOptions = {
           method: 'POST',
@@ -297,18 +296,17 @@ app.post('/opt-in', async (req, res) => {
             "data":{
               "type":"profile",
               "attributes":{
-                "email":"${formData.contact_email}",
-                "phone_number":"f${formData.contact_phone}",
-                "first_name":"${formData.contact_first_name}",
-                "last_name":"${formData.contact_last_name}",
-                "locale":"en-US",
                 "location":{
-                  "address1":"${formData.contact_street_address}",
-                  "city":"${formData.contact_city}",
+                  "address1":"${formData.form_data.contact_street_address}",
+                  "city":"${formData.form_data.contact_city}",
                   "country":"United States",
-                  "region":${formData.contact_state === 'Kentucky' ? "KY" : "IN"},
-                  "zip":"${formData.contact_zip_code}",
-                }
+                  "region":"${formData.form_data.contact_state}",
+                  "zip":"${formData.form_data.contact_zip_code}"
+                },
+                "email":"${formData.form_data.contact_email}",
+                "phone_number":"+1${formData.form_data.contact_phone.replaceAll("-", "")}",
+                "first_name":"${formData.form_data.contact_first_name}",
+                "last_name":"${formData.form_data.contact_last_name}"
               }
             }
           }`
