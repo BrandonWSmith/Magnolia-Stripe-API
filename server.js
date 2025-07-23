@@ -309,11 +309,18 @@ app.post('/create-payment-intent', async (req, res) => {
 });
 
 app.post('/update-payment-intent', (req, res) => {
-  const { paymentIntentId, metadata } = req.body;
+  const { paymentIntentId, metadata, price } = req.body;
 
-  stripe.paymentIntents.update(paymentIntentId, {
-    metadata: metadata,
-  });
+  if (price) {
+    stripe.paymentIntents.update(paymentIntentId, {
+      amount: price,
+      metadata: metadata,
+    });
+  } else {
+    stripe.paymentIntents.update(paymentIntentId, {
+      metadata: metadata,
+    });
+  }
 
   res.json();
 });
