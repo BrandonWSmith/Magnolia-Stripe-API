@@ -330,13 +330,18 @@ app.post('/update-payment-intent', async (req, res) => {
         metadata: metadataClear
       });
     }
+
+    const updateParams = {
+      metadata: metadata
+    };
+    
+    if (price !== undefined) {
+      updateParams.amount = price;
+    }
     
     const updatedPaymentIntent = await stripe.paymentIntents.update(
       paymentIntentId,
-      {
-        amount: price,
-        metadata: metadata,
-      }
+      updateParams
     );
     
     res.json({ success: true, paymentIntent: updatedPaymentIntent });
