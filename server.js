@@ -308,16 +308,27 @@ app.post('/create-payment-intent', async (req, res) => {
   res.json({client_secret: paymentIntent.client_secret, id: paymentIntent.id});
 });
 
-app.post('/update-payment-intent', (req, res) => {
-  const { paymentIntentId, metadata, price } = req.body;
-  console.log(price);
-
-  stripe.paymentIntents.update(paymentIntentId, {
-    amount: price,
-    metadata: metadata,
-  });
-
-  res.json();
+app.post('/update-payment-intent', async (req, res) => {
+  try {
+    const { paymentIntentId, metadata, price } = req.body;
+    
+    if (!paymentIntentId || paymentIntentId === '') {
+      return res.status(400).json({ error: 'Valid payment intent ID is required' });
+    }
+    
+    const updatedPaymentIntent = await stripe.paymentIntents.update(
+      paymentIntentId,
+      {
+        amount: price,
+        metadata: metadata,
+      }
+    );
+    
+    res.json({ success: true, paymentIntent: updatedPaymentIntent });
+  } catch (error) {
+    console.error('Error updating payment intent:', error);
+    res.status(400).json({ error: error.message });
+  }
 });
 
 app.post('/prepare-payment', async (req, res) => {
