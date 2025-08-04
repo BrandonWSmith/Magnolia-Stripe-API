@@ -245,6 +245,7 @@ app.post('/shopify-admin-api', async (req, res) => {
       variables: variables,
     });
 
+    res.set('Content-Encoding', 'gzip');
     res.json({data: data});
   } catch (e) {
     console.log(e.response.body);
