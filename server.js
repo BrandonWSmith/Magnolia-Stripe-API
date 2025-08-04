@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const port = process.env.PORT || 11000;
+const compression = require('compression');
 require('@shopify/shopify-api/adapters/node');
 const { Session, shopifyApi, LATEST_API_VERSION } = require('@shopify/shopify-api');
 const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
@@ -23,6 +24,7 @@ app.use(cors({
   origin: '*',
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+app.use(compression());
 
 app.post('/klaviyo-calculator-used', async (req, res) => {
   const { formData } = req.body;
@@ -245,7 +247,6 @@ app.post('/shopify-admin-api', async (req, res) => {
       variables: variables,
     });
 
-    res.set('Content-Encoding', 'gzip');
     res.json({data: data});
   } catch (e) {
     console.log(e.response.body);
