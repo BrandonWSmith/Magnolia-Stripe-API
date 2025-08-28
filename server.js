@@ -762,16 +762,16 @@ app.get('/generate-discount-code', async (req, res) => {
           "value": {
             "discountAmount": {
               "amount": "1200.00",
-              "appliesOnEachItem": false
+              "appliesOnEachItem": "false"
             }
           },
           "items": {
-            "all": true
+            "all": "true"
           }
         },
         "usageLimit": 1,
         "customerSelection": {
-          "all": true
+          "all": "true"
         }
       }
 
