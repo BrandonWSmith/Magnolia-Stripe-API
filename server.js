@@ -715,9 +715,77 @@ app.get('/generate-discount-code', async (req, res) => {
     }
   )
   .then(response => response.json())
-  .then(data => {
+  .then(async data => {
     discountCodeExists = typeof data.data.codeDiscountNodeByCode != 'undefined';
-    res.json({discountCodeExists: discountCodeExists, data: data.data});
+
+    if (!discountCodeExists) {
+      const createDiscountCodeQueryString = `mutation CreateDiscountCode($basicCodeDiscount: DiscountCodeBasicInput!) {
+        discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
+          codeDiscountNode {
+            id codeDiscount {
+              ... on DiscountCodeBasic {
+                title
+                startsAt
+                endsAt
+                customerSelection {
+                  ... on DiscountCustomers {
+                    customers {
+                      id
+                    }
+                  }
+                }
+                customerGets {
+                  value {
+                    ... on DiscountPercentage {
+                      percentage
+                    } 
+                  }
+                }
+              }
+            }
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`;
+
+      const createDiscountCodeVariables = {
+        "basicCodeDiscount": {
+          "title": "Medicaid Discount",
+          "code": discountCode,
+          "startsAt": Date.now(),
+          "endsAt": null,
+        },
+        "customerGets": {
+          "value": {
+            "discountAmount": {
+              "amount": "1200.00",
+              "appliesOnEachItem": false
+            }
+          },
+          "items": {
+            "all": true
+          }
+        },
+        "usageLimit": 1
+      }
+
+      await fetch('https://magnolia-api.onrender.com/shopify-admin-api',
+        {
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({queryString: createDiscountCodeQueryString, variables: createDiscountCodeVariables}),
+        }
+      )
+      .then(response => response.json())
+      .then(data => res.json({data: data}));
+    } else {
+      res.json({message: "Discount code already exists, please try again", data: data.data});
+    }
   });
 });
 
