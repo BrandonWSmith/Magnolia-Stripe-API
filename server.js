@@ -678,11 +678,11 @@ app.get('/get-form-data', (req, res) => {
 });
 
 app.get('/generate-discount-code', async (req, res) => {
-  let discountCode = 'MCM123456789';
+  let discountCode = '';
 
-  // for (let i = 0; i <= 9; i++) {
-  //     discountCode += Math.floor(Math.random() * 9).toString();
-  // }
+  for (let i = 0; i <= 9; i++) {
+      discountCode += Math.floor(Math.random() * 9).toString();
+  }
 
   const checkCodeExistsQueryString = `query codeDiscountNodeByCode($code: String!) {
     codeDiscountNodeByCode(code: $code) {
