@@ -761,7 +761,7 @@ app.get('/generate-discount-code', async (req, res) => {
         "customerGets": {
           "value": {
             "discountAmount": {
-              "amount": "1200.00",
+              "amount": 1200.00,
               "appliesOnEachItem": false
             }
           },
