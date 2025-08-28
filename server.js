@@ -781,7 +781,7 @@ app.get('/generate-discount-code', async (req, res) => {
       .then(response => response.json())
       .then(data => res.json({data: data}));
     } else {
-      res.json({message: "Discount code already exists, please try again", data: data.data});
+      fetch('https://magnolia-api.onrender.com/generate-discount-code');
     }
   });
 });
