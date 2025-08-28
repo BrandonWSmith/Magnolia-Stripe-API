@@ -646,7 +646,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       body: JSON.stringify({queryString: queryString, variables: variables}),
     })
     .then(response => response.json())
-    .then(data => res.json({data: data}));
+    .then(data => res.json({data: data, event: event}));
   } else if (event.type === 'payment_intent.payment_failed') {
     const paymentIntent = event.data.object;
     console.log(`PaymentIntent failed! ID: ${paymentIntent.id}`);
@@ -726,17 +726,12 @@ app.get('/generate-discount-code', async (req, res) => {
                 title
                 startsAt
                 endsAt
-                customerSelection {
-                  ... on DiscountCustomers {
-                    customers {
-                      id
-                    }
-                  }
-                }
                 customerGets {
                   value {
-                    ... on DiscountPercentage {
-                      percentage
+                    ... on DiscountAmount {
+                      amount {
+                        amount
+                      }
                     } 
                   }
                 }
