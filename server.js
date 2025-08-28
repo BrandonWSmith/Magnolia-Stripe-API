@@ -747,8 +747,8 @@ app.get('/generate-discount-code', async (req, res) => {
 
       const createDiscountCodeVariables = {
         "basicCodeDiscount": {
-          "title": "Medicaid Discount",
-          "code": discountCode,
+          "title": `Medicaid Discount - ${discountCode}`,
+          "code": `MCMD${discountCode}`,
           "startsAt": new Date(Date.now()),
           "endsAt": null,
           "customerGets": {
