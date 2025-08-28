@@ -761,7 +761,7 @@ app.get('/generate-discount-code', async (req, res) => {
         "customerGets": {
           "value": {
             "discountAmount": {
-              "amount": 1200.00,
+              "amount": "1200.00",
               "appliesOnEachItem": false
             }
           },
@@ -769,7 +769,10 @@ app.get('/generate-discount-code', async (req, res) => {
             "all": true
           }
         },
-        "usageLimit": 1
+        "usageLimit": 1,
+        "customerSelection": {
+          "all": true
+        }
       }
 
       await fetch('https://magnolia-api.onrender.com/shopify-admin-api',
