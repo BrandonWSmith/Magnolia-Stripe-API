@@ -681,7 +681,7 @@ app.get('/generate-discount-code', async (req, res) => {
   let discountCode = '';
 
   for (let i = 0; i <= 9; i++) {
-      discountCode += Math.floor(Math.random() * 9).toString();
+    discountCode += Math.floor(Math.random() * 9).toString();
   }
 
   const checkCodeExistsQueryString = `query codeDiscountNodeByCode($code: String!) {
