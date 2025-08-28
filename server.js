@@ -704,6 +704,7 @@ app.get('/generate-discount-code', async (req, res) => {
     'code': discountCode
   };
 
+  let discountCodeExists;
   await fetch('https://magnolia-api.onrender.com/shopify-admin-api',
     {
       method: 'POST',
@@ -714,7 +715,10 @@ app.get('/generate-discount-code', async (req, res) => {
     }
   )
   .then(response => response.json())
-  .then(data => res.json({data: data}));
+  .then(data => {
+    discountCodeExists = typeof data.data.codeDiscountNodeByCode != 'undefined';
+    res.json({discountCodeExists: discountCodeExists});
+  });
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
