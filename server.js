@@ -678,4 +678,30 @@ app.get('/get-form-data', (req, res) => {
   }
 });
 
+app.get('/generate-discount-code', async (req, res) => {
+  let discountCode = "";
+
+  for (let i = 0; i <= 9; i++) {
+      discountCode += Math.floor(Math.random() * 9).toString();
+  }
+
+  const checkCodeExistsQueryString = 'query codeDiscountNodeByCode($code: String!) { codeDiscountNodeByCode(code: $code) { codeDiscount { __typename ... on DiscountCodeBasic { codesCount { count } shortSummary } } id } }';
+
+  const checkCodeExistsVariables = {
+    "code": discountCode
+  };
+
+  await fetch('https://magnolia-cremations.myshopify.com/admin/api/2025-07/graphql.json',
+    {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: checkCodeExistsQueryString, variables: checkCodeExistsVariables}),
+    }
+  )
+  .then(response => response.json())
+  .then(data => res.json({data: data}));
+});
+
 app.listen(port, () => console.log(`Listening on port ${port}`));
