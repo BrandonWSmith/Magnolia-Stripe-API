@@ -710,7 +710,7 @@ app.get('/generate-discount-code', async (req, res) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({queryString: checkCodeExistsQueryString, variables: checkCodeExistsVariables}),
+      body: JSON.stringify({query: checkCodeExistsQueryString, variables: checkCodeExistsVariables}),
     }
   )
   .then(response => response.json())
