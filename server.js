@@ -750,24 +750,24 @@ app.get('/generate-discount-code', async (req, res) => {
           "title": "Medicaid Discount",
           "code": discountCode,
           "startsAt": new Date(Date.now()),
-          "endsAt": null
-        },
-        "customerGets": {
-          "value": {
-            "discountAmount": {
-              "amount": "1200.00",
-              "appliesOnEachItem": false
+          "endsAt": null,
+          "customerGets": {
+            "value": {
+              "discountAmount": {
+                "amount": "1200.00",
+                "appliesOnEachItem": false
+              }
+            },
+            "items": {
+              "all": true
             }
           },
-          "items": {
+          "usageLimit": 1,
+          "customerSelection": {
             "all": true
           }
-        },
-        "usageLimit": 1,
-        "customerSelection": {
-          "all": true
         }
-      }
+      };
 
       await fetch('https://magnolia-api.onrender.com/shopify-admin-api',
         {
