@@ -679,7 +679,7 @@ app.get('/get-form-data', (req, res) => {
 });
 
 app.get('/generate-discount-code', async (req, res) => {
-  let discountCode = "";
+  let discountCode = '';
 
   for (let i = 0; i <= 9; i++) {
       discountCode += Math.floor(Math.random() * 9).toString();
@@ -704,13 +704,13 @@ app.get('/generate-discount-code', async (req, res) => {
     'code': discountCode
   };
 
-  await fetch('https://magnolia-cremations.myshopify.com/admin/api/2025-07/graphql.json',
+  await fetch('https://magnolia-api.onrender.com/shopify-admin-api',
     {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({query: checkCodeExistsQueryString, variables: checkCodeExistsVariables}),
+      body: JSON.stringify({queryString: checkCodeExistsQueryString, variables: checkCodeExistsVariables}),
     }
   )
   .then(response => response.json())
