@@ -755,7 +755,7 @@ app.get('/generate-discount-code', async (req, res) => {
         "basicCodeDiscount": {
           "title": "Medicaid Discount",
           "code": discountCode,
-          "startsAt": Date.now(),
+          "startsAt": new Date(Date.now()),
           "endsAt": null,
         },
         "customerGets": {
