@@ -685,10 +685,23 @@ app.get('/generate-discount-code', async (req, res) => {
       discountCode += Math.floor(Math.random() * 9).toString();
   }
 
-  const checkCodeExistsQueryString = 'query codeDiscountNodeByCode($code: String!) { codeDiscountNodeByCode(code: $code) { codeDiscount { __typename ... on DiscountCodeBasic { codesCount { count } shortSummary } } id } }';
+  const checkCodeExistsQueryString = `query codeDiscountNodeByCode($code: String!) {
+    codeDiscountNodeByCode(code: $code) {
+      codeDiscount {
+        __typename
+        ... on DiscountCodeBasic {
+          codesCount {
+            count
+          }
+          shortSummary
+        }
+      }
+      id
+    }
+  }`;
 
   const checkCodeExistsVariables = {
-    "code": discountCode
+    'code': discountCode
   };
 
   await fetch('https://magnolia-cremations.myshopify.com/admin/api/2025-07/graphql.json',
