@@ -717,7 +717,7 @@ app.get('/generate-discount-code', async (req, res) => {
   .then(response => response.json())
   .then(data => {
     discountCodeExists = typeof data.data.codeDiscountNodeByCode != 'undefined';
-    res.json({discountCodeExists: discountCodeExists});
+    res.json({discountCodeExists: discountCodeExists, data: data.data});
   });
 });
 
