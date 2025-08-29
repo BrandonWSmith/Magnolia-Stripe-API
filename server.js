@@ -681,7 +681,7 @@ app.get('/get-form-data', (req, res) => {
 
 app.post('/generate-discount-code', async (req, res) => {
   const { first_name, last_name, email } = req.body;
-  let discountCode = 'MCMD0734178231';
+  let discountCode = '0734178231';
   async function generateUniqueDiscountCode() {
     // for (let i = 0; i <= 9; i++) {
     //   discountCode += Math.floor(Math.random() * 9).toString();
@@ -789,7 +789,7 @@ app.post('/generate-discount-code', async (req, res) => {
         .eq('code', `MCMD${discountCode}`);
       console.log('getRowData:', getRowData);
 
-      if (getRowError) {
+      if (getRowError.length > 0) {
         console.error('Supabase select error:', getRowError);
         throw getRowError;
       } else if (getRowData) { 
