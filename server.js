@@ -9,6 +9,8 @@ const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY);
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const {createClient} = require('@supabase/supabase-js');
+const supabase = createClient('https://tsmktlhxxztqljdwbdlj.supabase.co', process.env.SUPABASE_KEY);
 
 app.use((req, res, next) => {
   if (req.originalUrl === '/webhook') {
@@ -674,6 +676,130 @@ app.get('/get-form-data', (req, res) => {
   } else {
     console.log('IP does not match');
     res.json({message: "There was an issue retrieving form data"});
+  }
+});
+
+app.post('/generate-discount-code', async (req, res) => {
+  const { first_name, last_name, email } = req.body;
+  let discountCode = '';
+  async function generateUniqueDiscountCode() {
+    for (let i = 0; i <= 9; i++) {
+      discountCode += Math.floor(Math.random() * 9).toString();
+    }
+
+    const checkCodeExistsQueryString = `query codeDiscountNodeByCode($code: String!) {
+      codeDiscountNodeByCode(code: $code) {
+        codeDiscount {
+          __typename
+          ... on DiscountCodeBasic {
+            codesCount {
+              count
+            }
+            shortSummary
+          }
+        }
+        id
+      }
+    }`;
+
+    const checkCodeExistsVariables = {
+      'code': `MCMD${discountCode}`
+    };
+
+    try {
+      /*const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: checkCodeExistsQueryString, variables: checkCodeExistsVariables}),
+      });
+
+      const data = await response.json();
+      const discountCodeExists = data.data.data.codeDiscountNodeByCode !== null && data.data.data.codeDiscountNodeByCode !== undefined;
+
+      if (discountCodeExists) {
+        return await generateUniqueDiscountCode();
+      }
+
+      const createDiscountCodeQueryString = `mutation CreateDiscountCode($basicCodeDiscount: DiscountCodeBasicInput!) {
+        discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
+          codeDiscountNode {
+            id codeDiscount {
+              ... on DiscountCodeBasic {
+                title
+                startsAt
+                endsAt
+                customerGets {
+                  value {
+                    ... on DiscountAmount {
+                      amount {
+                        amount
+                      }
+                    } 
+                  }
+                }
+              }
+            }
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`;
+
+      const createDiscountCodeVariables = {
+        "basicCodeDiscount": {
+          "title": `Medicaid Discount - ${discountCode}`,
+          "code": `MCMD${discountCode}`,
+          "startsAt": new Date(Date.now()),
+          "endsAt": null,
+          "customerGets": {
+            "value": {
+              "discountAmount": {
+                "amount": "1200.00",
+                "appliesOnEachItem": false
+              }
+            },
+            "items": {
+              "all": true
+            }
+          },
+          "usageLimit": 1,
+          "customerSelection": {
+            "all": true
+          }
+        }
+      };
+
+      const createResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: createDiscountCodeQueryString, variables: createDiscountCodeVariables}),
+      });
+
+      const createData = await createResponse.json();
+      return createData;*/
+      const { data, error } = await supabase
+        .from('Medicaid Checkout Codes')
+        .insert({first_name: first_name, last_name: last_name, email: email, code: `MCMD${discountCode}`})
+        .select();
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  try {
+    const result = await generateUniqueDiscountCode();
+    res.json({data: result, discount_code: `MCMD${discountCode}`});
+  } catch (error) {
+    console.error('Error generating discount code:', error);
+    res.status(500).json({error: 'Failed to generate discount code'});
   }
 });
 
