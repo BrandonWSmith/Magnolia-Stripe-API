@@ -787,11 +787,12 @@ app.post('/generate-discount-code', async (req, res) => {
         .from('Medicaid Checkout Codes')
         .select()
         .eq('code', `MCMD${discountCode}`);
+      console.log('getRowData:', getRowData);
 
       if (getRowError) {
         console.error('Supabase select error:', getRowError);
         throw getRowError;
-      } else if (getRowData.length > 0) { 
+      } else if (getRowData) { 
         console.log('Code exists, generating a new one');
         return "Duplicate code";
         //return await generateUniqueDiscountCode();
