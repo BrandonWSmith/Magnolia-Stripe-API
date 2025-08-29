@@ -10,6 +10,8 @@ const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST);
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const {createClient} = require('@supabase/supabase-js');
+const supabase = createClient('https://tsmktlhxxztqljdwbdlj.supabase.co', process.env.SUPABASE_KEY);
 
 app.use((req, res, next) => {
   if (req.originalUrl === '/webhook') {
@@ -677,7 +679,8 @@ app.get('/get-form-data', (req, res) => {
   }
 });
 
-app.get('/generate-discount-code', async (req, res) => {
+app.post('/generate-discount-code', async (req, res) => {
+  const { first_name, last_name, email } = req.body;
   let discountCode = '';
   async function generateUniqueDiscountCode() {
     for (let i = 0; i <= 9; i++) {
@@ -719,7 +722,7 @@ app.get('/generate-discount-code', async (req, res) => {
         return await generateUniqueDiscountCode();
       }
 
-      const createDiscountCodeQueryString = `mutation CreateDiscountCode($basicCodeDiscount: DiscountCodeBasicInput!) {
+      /*const createDiscountCodeQueryString = `mutation CreateDiscountCode($basicCodeDiscount: DiscountCodeBasicInput!) {
         discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
           codeDiscountNode {
             id codeDiscount {
@@ -779,7 +782,10 @@ app.get('/generate-discount-code', async (req, res) => {
       });
 
       const createData = await createResponse.json();
-      return createData;
+      return createData;*/
+      await supabase
+        .from('Medicaid Checkout Codes')
+        .insert({first_name: first_name, last_name: last_name, email: email, code: `MCMD${discountCode}`});
     } catch (error) {
       throw error;
     }
