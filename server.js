@@ -793,7 +793,8 @@ app.post('/generate-discount-code', async (req, res) => {
         throw getRowError;
       } else if (getRowData.length > 0) { 
         console.log('Code exists, generating a new one');
-        return await generateUniqueDiscountCode();
+        return "Duplicate code";
+        //return await generateUniqueDiscountCode();
       }
 
       const { newRowData, newRowError } = await supabase
