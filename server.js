@@ -788,6 +788,11 @@ app.post('/generate-discount-code', async (req, res) => {
         .insert({first_name: first_name, last_name: last_name, email: email, code: `MCMD${discountCode}`})
         .select();
 
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
+      
       return data;
     } catch (error) {
       throw error;
