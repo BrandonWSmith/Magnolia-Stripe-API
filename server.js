@@ -791,7 +791,7 @@ app.get('/generate-discount-code', async (req, res) => {
     res.json({data: result, discount_code: `MCMD${discountCode}`});
   } catch (error) {
     console.error('Error generating discount code:', error);
-    res.status(500).json({error: 'Failed to generate discount code'});
+    res.status(500).json({error: 'Failed to generate discount code', description: error});
   }
 });
 
