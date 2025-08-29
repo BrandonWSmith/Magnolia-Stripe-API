@@ -681,11 +681,11 @@ app.get('/get-form-data', (req, res) => {
 
 app.post('/generate-discount-code', async (req, res) => {
   const { first_name, last_name, email } = req.body;
-  let discountCode = '';
+  let discountCode = 'MCMD0734178231';
   async function generateUniqueDiscountCode() {
-    for (let i = 0; i <= 9; i++) {
-      discountCode += Math.floor(Math.random() * 9).toString();
-    }
+    // for (let i = 0; i <= 9; i++) {
+    //   discountCode += Math.floor(Math.random() * 9).toString();
+    // }
 
     const checkCodeExistsQueryString = `query codeDiscountNodeByCode($code: String!) {
       codeDiscountNodeByCode(code: $code) {
@@ -783,17 +783,30 @@ app.post('/generate-discount-code', async (req, res) => {
 
       const createData = await createResponse.json();
       return createData;*/
-      const { data, error } = await supabase
+      const { getRowData, getRowError } = await supabase
+        .from('Medicaid Checkout Codes')
+        .select()
+        .eq('code', `MCMD${discountCode}`);
+
+      if (getRowError) {
+        console.error('Supabase select error:', getRowError);
+        throw getRowError;
+      } else if (getRowData.length > 0) { 
+        console.log('Code exists, generating a new one');
+        return await generateUniqueDiscountCode();
+      }
+
+      const { newRowData, newRowError } = await supabase
         .from('Medicaid Checkout Codes')
         .insert({first_name: first_name, last_name: last_name, email: email, code: `MCMD${discountCode}`})
         .select();
 
-      if (error) {
-        console.error('Supabase insert error:', error);
-        throw error;
+      if (newRowError) {
+        console.error('Supabase insert error:', newRowError);
+        throw newRowError;
       }
-      
-      return data;
+
+      return newRowData;
     } catch (error) {
       throw error;
     }
