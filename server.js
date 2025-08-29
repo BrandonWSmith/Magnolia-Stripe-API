@@ -783,22 +783,22 @@ app.post('/generate-discount-code', async (req, res) => {
 
       const createData = await createResponse.json();
       return createData;*/
-      const { getRowData, getRowError } = await supabase
+      const { data: getRowData, error: getRowError } = await supabase
         .from('Medicaid Checkout Codes')
         .select()
         .eq('code', `MCMD${discountCode}`);
       console.log('getRowData:', getRowData);
 
-      if (getRowError.length > 0) {
+      if (getRowError) {
         console.error('Supabase select error:', getRowError);
         throw getRowError;
-      } else if (getRowData) { 
+      } else if (getRowData && getRowData.length > 0) { 
         console.log('Code exists, generating a new one');
         return "Duplicate code";
         //return await generateUniqueDiscountCode();
       }
 
-      const { newRowData, newRowError } = await supabase
+      const { data: newRowData, error: newRowError } = await supabase
         .from('Medicaid Checkout Codes')
         .insert({first_name: first_name, last_name: last_name, email: email, code: `MCMD${discountCode}`})
         .select();
