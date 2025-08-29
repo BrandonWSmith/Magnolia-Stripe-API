@@ -681,11 +681,11 @@ app.get('/get-form-data', (req, res) => {
 
 app.post('/generate-discount-code', async (req, res) => {
   const { first_name, last_name, email } = req.body;
-  let discountCode = '0734178231';
+  let discountCode = '';
   async function generateUniqueDiscountCode() {
-    // for (let i = 0; i <= 9; i++) {
-    //   discountCode += Math.floor(Math.random() * 9).toString();
-    // }
+    for (let i = 0; i <= 9; i++) {
+      discountCode += Math.floor(Math.random() * 9).toString();
+    }
 
     const checkCodeExistsQueryString = `query codeDiscountNodeByCode($code: String!) {
       codeDiscountNodeByCode(code: $code) {
@@ -792,10 +792,8 @@ app.post('/generate-discount-code', async (req, res) => {
       if (getRowError) {
         console.error('Supabase select error:', getRowError);
         throw getRowError;
-      } else if (getRowData && getRowData.length > 0) { 
-        console.log('Code exists, generating a new one');
-        return "Duplicate code";
-        //return await generateUniqueDiscountCode();
+      } else if (getRowData && getRowData.length > 0) {
+        return await generateUniqueDiscountCode();
       }
 
       const { data: newRowData, error: newRowError } = await supabase
