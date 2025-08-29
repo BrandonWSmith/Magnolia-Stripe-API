@@ -715,7 +715,7 @@ app.get('/generate-discount-code', async (req, res) => {
   )
   .then(response => response.json())
   .then(async data => {
-    discountCodeExists = typeof data.data.data.codeDiscountNodeByCode != 'undefined';
+    discountCodeExists = typeof data.data.data.codeDiscountNodeByCode != 'undefined' || data.data.data.codeDiscountNodeByCode != null;
 
     if (!discountCodeExists) {
       const createDiscountCodeQueryString = `mutation CreateDiscountCode($basicCodeDiscount: DiscountCodeBasicInput!) {
