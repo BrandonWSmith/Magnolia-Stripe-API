@@ -707,7 +707,7 @@ app.post('/generate-discount-code', async (req, res) => {
     };
 
     try {
-      const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+      /*const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -722,7 +722,7 @@ app.post('/generate-discount-code', async (req, res) => {
         return await generateUniqueDiscountCode();
       }
 
-      /*const createDiscountCodeQueryString = `mutation CreateDiscountCode($basicCodeDiscount: DiscountCodeBasicInput!) {
+      const createDiscountCodeQueryString = `mutation CreateDiscountCode($basicCodeDiscount: DiscountCodeBasicInput!) {
         discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
           codeDiscountNode {
             id codeDiscount {
@@ -783,9 +783,12 @@ app.post('/generate-discount-code', async (req, res) => {
 
       const createData = await createResponse.json();
       return createData;*/
-      await supabase
+      const { data, error } = await supabase
         .from('Medicaid Checkout Codes')
-        .insert({first_name: first_name, last_name: last_name, email: email, code: `MCMD${discountCode}`});
+        .insert({first_name: first_name, last_name: last_name, email: email, code: `MCMD${discountCode}`})
+        .select();
+
+      return data;
     } catch (error) {
       throw error;
     }
