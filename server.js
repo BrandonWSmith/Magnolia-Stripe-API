@@ -678,46 +678,48 @@ app.get('/get-form-data', (req, res) => {
 });
 
 app.get('/generate-discount-code', async (req, res) => {
-  let discountCode = '';
+  async function generateUniqueDiscountCode() {
+    let discountCode = '';
 
-  for (let i = 0; i <= 9; i++) {
-    discountCode += Math.floor(Math.random() * 9).toString();
-  }
+    for (let i = 0; i <= 9; i++) {
+      discountCode += Math.floor(Math.random() * 9).toString();
+    }
 
-  const checkCodeExistsQueryString = `query codeDiscountNodeByCode($code: String!) {
-    codeDiscountNodeByCode(code: $code) {
-      codeDiscount {
-        __typename
-        ... on DiscountCodeBasic {
-          codesCount {
-            count
+    const checkCodeExistsQueryString = `query codeDiscountNodeByCode($code: String!) {
+      codeDiscountNodeByCode(code: $code) {
+        codeDiscount {
+          __typename
+          ... on DiscountCodeBasic {
+            codesCount {
+              count
+            }
+            shortSummary
           }
-          shortSummary
         }
+        id
       }
-      id
-    }
-  }`;
+    }`;
 
-  const checkCodeExistsVariables = {
-    'code': discountCode
-  };
+    const checkCodeExistsVariables = {
+      'code': `MCMD${discountCode}`
+    };
 
-  let discountCodeExists;
-  await fetch('https://magnolia-api.onrender.com/shopify-admin-api',
-    {
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({queryString: checkCodeExistsQueryString, variables: checkCodeExistsVariables}),
-    }
-  )
-  .then(response => response.json())
-  .then(async data => {
-    discountCodeExists = typeof data.data.data.codeDiscountNodeByCode != 'undefined' || data.data.data.codeDiscountNodeByCode != null;
+    try {
+      const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: checkCodeExistsQueryString, variables: checkCodeExistsVariables}),
+      });
 
-    if (!discountCodeExists) {
+      const data = await response.json();
+      const discountCodeExists = data.data.data.codeDiscountNodeByCode !== null && data.data.data.codeDiscountNodeByCode !== undefined;
+
+      if (discountCodeExists) {
+        return await generateUniqueDiscountCode();
+      }
+
       const createDiscountCodeQueryString = `mutation CreateDiscountCode($basicCodeDiscount: DiscountCodeBasicInput!) {
         discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
           codeDiscountNode {
@@ -769,21 +771,28 @@ app.get('/generate-discount-code', async (req, res) => {
         }
       };
 
-      await fetch('https://magnolia-api.onrender.com/shopify-admin-api',
-        {
-          method: 'POST',
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({queryString: createDiscountCodeQueryString, variables: createDiscountCodeVariables}),
-        }
-      )
-      .then(response => response.json())
-      .then(data => res.json({data: data}));
-    } else {
-      fetch('https://magnolia-api.onrender.com/generate-discount-code');
+      const createResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: createDiscountCodeQueryString, variables: createDiscountCodeVariables}),
+      });
+
+      const createData = await createResponse.json();
+      return createData;
+    } catch (error) {
+      throw error;
     }
-  });
+  }
+
+  try {
+    const result = await generateUniqueDiscountCode();
+    res.json({data: result});
+  } catch (error) {
+    console.error('Error generating discount code:', error);
+    res.status(500).json({error: 'Failed to generate discount code'});
+  }
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
