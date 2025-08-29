@@ -678,9 +678,8 @@ app.get('/get-form-data', (req, res) => {
 });
 
 app.get('/generate-discount-code', async (req, res) => {
+  let discountCode = '';
   async function generateUniqueDiscountCode() {
-    let discountCode = '';
-
     for (let i = 0; i <= 9; i++) {
       discountCode += Math.floor(Math.random() * 9).toString();
     }
@@ -791,7 +790,7 @@ app.get('/generate-discount-code', async (req, res) => {
     res.json({data: result, discount_code: `MCMD${discountCode}`});
   } catch (error) {
     console.error('Error generating discount code:', error);
-    res.status(500).json({error: 'Failed to generate discount code', description: error});
+    res.status(500).json({error: 'Failed to generate discount code'});
   }
 });
 
