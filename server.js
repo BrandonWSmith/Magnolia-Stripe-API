@@ -689,4 +689,54 @@ app.post('/check-medicaid-verification-password', (req, res) => {
   }
 });
 
+app.post('/klaviyo-medicaid-eligibility-approved', async (req, res) => {
+  const { first_name, last_name, email } = req.body;
+  const body = `{
+    "data":{
+      "type":"event",
+      "attributes":{
+        "properties":{
+          "first_name":"${first_name}",
+          "last_name":"${last_name}",
+          "email":"${email}"
+        },
+        "metric":{
+          "data":{
+            "type":"metric",
+            "attributes":{
+              "name":"Medicaid Eligibility Approved"
+            }
+          }
+        },
+        "profile":{
+          "data":{
+            "type":"profile",
+            "attributes":{
+              "email":"${email}",
+              "first_name":"${first_name}",
+              "last_name":"${last_name}"
+            }
+          }
+        }
+      }
+    }
+  }`;
+  
+  const url = 'https://a.klaviyo.com/api/events';
+  const options = {
+    method: 'POST',
+    headers: {
+      accept: 'application/vnd.api+json',
+      revision: '2025-04-15',
+      'content-type': 'application/vnd.api+json',
+      Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+    },
+    body: body
+  };
+
+  fetch(url, options)
+    .then(response => response.status === 202 ? res.send() : console.log(response))
+    .catch(err => console.error(err));
+});
+
 app.listen(port, () => console.log(`Listening on port ${port}`));
