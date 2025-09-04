@@ -10,9 +10,11 @@ const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST);
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-const {createClient} = require('@supabase/supabase-js');
-const supabase = createClient('https://tsmktlhxxztqljdwbdlj.supabase.co', process.env.SUPABASE_KEY);
 
+app.use(cors({
+  origin: '*',
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use((req, res, next) => {
   if (req.originalUrl === '/webhook') {
     next();
@@ -21,10 +23,6 @@ app.use((req, res, next) => {
   }
 });
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  origin: '*',
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
 
 app.post('/klaviyo-calculator-used', async (req, res) => {
   const { formData } = req.body;
