@@ -749,14 +749,6 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       customerSet(input: $input, identifier: $identifier) {
         customer {
           id
-          firstName
-          lastName
-          defaultEmailAddress {
-            emailAddress
-          }
-          defaultPhoneNumber {
-            phoneNumber
-          }
         }
         userErrors {
           field
@@ -797,16 +789,6 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       customerUpdate(input: $input) {
         customer {
           id
-          metafields(first: 3) {
-            edges {
-              node {
-                id
-                namespace
-                key
-                value
-              }
-            }
-          }
         }
         userErrors {
           message
