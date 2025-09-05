@@ -744,8 +744,8 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       klaviyoResponse.json().then(data => res.json({message: 'There was an issue sending event to Klaviyo', data: data}));
     }
 
-    const setCustomerQueryString = `mutation customerCreate($input: CustomerInput!) {
-  customerCreate(input: $input) {
+    const createCustomerQueryString = `mutation customerCreate($input: CustomerInput!) {
+    customerCreate(input: $input) {
       customerSet(input: $input, identifier: $identifier) {
         customer {
           id
@@ -757,45 +757,12 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       }
     }`;
 
-    const setCustomerVariables = {
+    const createCustomerVariables = {
       'input': {
         'firstName': first_name,
         'lastName': last_name,
         'email': email,
-        'phone': phone
-      }
-    };
-
-    const setCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({queryString: setCustomerQueryString, variables: setCustomerVariables}),
-    });
-
-    if (!setCustomerResponse.ok) {
-      setCustomerResponse.json().then(data => res.json({message: 'There was an issue creating/updating customer in Shopify', data: data}));
-    }
-
-    const setCustomerData = await setCustomerResponse.json();
-    const customerId = setCustomerData.customer.id;
-
-    const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
-      customerUpdate(input: $input) {
-        customer {
-          id
-        }
-        userErrors {
-          message
-          field
-        }
-      }
-    }`;
-
-    const updateCustomerVariables = {
-      'input': {
-        'id': customerId,
+        'phone': phone,
         'metafields': [
           {
             'id': 'gid://shopify/Metafield/160764920114',
@@ -805,17 +772,56 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       }
     };
 
-    const updateCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+    const createCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({queryString: updateCustomerQueryString, variables: updateCustomerVariables}),
+      body: JSON.stringify({queryString: createCustomerQueryString, variables: createCustomerVariables}),
     });
 
-    if (!updateCustomerResponse.ok) {
-      updateCustomerResponse.json().then(data => res.json({message: 'There was an issue updating customer metafield in Shopify', data: data}));
+    if (!createCustomerResponse.ok) {
+      createCustomerResponse.json().then(data => res.json({message: 'There was an issue creating/updating customer in Shopify', data: data}));
     }
+
+    const createCustomerData = await createCustomerResponse.json();
+    const customerId = createCustomerData.customer.id;
+
+    // const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
+    //   customerUpdate(input: $input) {
+    //     customer {
+    //       id
+    //     }
+    //     userErrors {
+    //       message
+    //       field
+    //     }
+    //   }
+    // }`;
+
+    // const updateCustomerVariables = {
+    //   'input': {
+    //     'id': customerId,
+    //     'metafields': [
+    //       {
+    //         'id': 'gid://shopify/Metafield/160764920114',
+    //         'value': caseNumber
+    //       }
+    //     ]
+    //   }
+    // };
+
+    // const updateCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+    //   method: 'POST',
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({queryString: updateCustomerQueryString, variables: updateCustomerVariables}),
+    // });
+
+    // if (!updateCustomerResponse.ok) {
+    //   updateCustomerResponse.json().then(data => res.json({message: 'There was an issue updating customer metafield in Shopify', data: data}));
+    // }
 
     const addCustomerTagQueryString = `mutation addTags($id: ID!, $tags: [String!]!) {
       tagsAdd(id: $id, tags: $tags) {
