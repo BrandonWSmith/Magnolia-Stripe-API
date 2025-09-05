@@ -797,7 +797,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     }
 
     // Check if customer was actually created
-    if (!createCustomerData.data?.customerSet?.customer?.id) {
+    if (!createCustomerData.data?.data?.customerSet?.customer?.id) {
       return res.status(500).json({
         message: 'No customer ID returned from Shopify',
         data: createCustomerData
