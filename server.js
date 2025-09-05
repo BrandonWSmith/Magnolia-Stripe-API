@@ -952,6 +952,8 @@ app.post('/medicaid-eligibility-declined', async (req, res) => {
       const klaviyoError = await klaviyoResponse.json();
       return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
     }
+
+    res.status(202).json({message: 'Submission successful!'});
   } catch (error) {
     return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: error});
   }
