@@ -745,8 +745,8 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
     }
 
-    const createCustomerQueryString = `mutation customerSet($input: CustomerInput!, $identifier: CustomerIdentifier!) {
-      customerSet(input: $input, identifier: $identifier) {
+    const createCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
+    customerSet(input: $input, identifier: $identifier) {
         customer {
           id
           firstName
