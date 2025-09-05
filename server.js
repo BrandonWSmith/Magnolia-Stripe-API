@@ -692,7 +692,7 @@ app.post('/check-medicaid-verification-password', (req, res) => {
 app.post('/medicaid-eligibility-approved', async (req, res) => {
   const { first_name, last_name, phone, email, caseNumber } = req.body;
 
-  //try {
+  try {
     const body = `{
       "data":{
         "type":"event",
@@ -745,7 +745,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
     }
 
-    const createCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
+    const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
     customerSet(input: $input, identifier: $identifier) {
         customer {
           id
@@ -761,7 +761,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       }
     }`;
 
-    const createCustomerVariables = {
+    const setCustomerVariables = {
       'input': {
         'firstName': first_name,
         'lastName': last_name,
@@ -773,74 +773,85 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       }
     };
 
-    const createCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+    const setCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({queryString: createCustomerQueryString, variables: createCustomerVariables}),
+      body: JSON.stringify({queryString: setCustomerQueryString, variables: setCustomerVariables}),
     });
 
-    if (!createCustomerResponse.ok) {
-      const customerError = await createCustomerResponse.json();
-      return res.status(500).json({message: 'There was an issue creating/updating customer in Shopify', data: customerError});
+    if (!setCustomerResponse.ok) {
+      const setCustomerError = await setCustomerResponse.json();
+      return res.status(500).json({message: 'There was an issue creating/updating customer in Shopify', data: setCustomerError});
     }
 
-    const createCustomerData = await createCustomerResponse.json();
+    const setCustomerData = await setCustomerResponse.json();
 
     // Check for GraphQL errors
-    if (createCustomerData.data?.customerSet?.userErrors?.length > 0) {
+    if (setCustomerData.data?.customerSet?.userErrors?.length > 0) {
       return res.status(500).json({
         message: 'GraphQL errors in customer creation',
-        data: createCustomerData.data.customerSet.userErrors
+        data: setCustomerData.data.customerSet.userErrors
       });
     }
 
     // Check if customer was actually created
-    if (!createCustomerData.data?.data?.customerSet?.customer?.id) {
+    if (!setCustomerData.data?.data?.customerSet?.customer?.id) {
       return res.status(500).json({
         message: 'No customer ID returned from Shopify',
-        data: createCustomerData
+        data: setCustomerData
       });
     }
 
-    const customerId = createCustomerData.data.data.customerSet.customer.id;
+    const customerId = setCustomerData.data.data.customerSet.customer.id;
 
-    // const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
-    //   customerUpdate(input: $input) {
-    //     customer {
-    //       id
-    //     }
-    //     userErrors {
-    //       message
-    //       field
-    //     }
-    //   }
-    // }`;
+    const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
+      customerUpdate(input: $input) {
+        customer {
+          id
+        }
+        userErrors {
+          message
+          field
+        }
+      }
+    }`;
 
-    // const updateCustomerVariables = {
-    //   'input': {
-    //     'id': customerId,
-    //     'metafields': [
-    //       {
-    //         'id': 'gid://shopify/Metafield/160764920114',
-    //         'value': caseNumber
-    //       }
-    //     ]
-    //   }
-    // };
+    const updateCustomerVariables = {
+      'input': {
+        'id': customerId,
+        'metafields': [
+          {
+            'id': 'gid://shopify/Metafield/160764920114',
+            'value': caseNumber
+          }
+        ]
+      }
+    };
 
-    // const updateCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
-    //   method: 'POST',
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({queryString: updateCustomerQueryString, variables: updateCustomerVariables}),
-    // });
+    const updateCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: updateCustomerQueryString, variables: updateCustomerVariables}),
+    });
 
-    // if (!updateCustomerResponse.ok) {
-    //   updateCustomerResponse.json().then(data => res.json({message: 'There was an issue updating customer metafield in Shopify', data: data}));
-    // }
+    if (!updateCustomerResponse.ok) {
+      const updateCustomerError = await updateCustomerResponse.json();
+      return res.status(500).json({message: 'There was an issue creating/updating customer in Shopify', data: updateCustomerError});
+    }
+
+    const updateCustomerData = await updateCustomerResponse.json();
+
+    // Check for GraphQL errors
+    if (updateCustomerData.data?.customerUpdate?.userErrors?.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in customer creation',
+        data: updateCustomerData.data.customerUpdate.userErrors
+      });
+    }
 
     const addCustomerTagQueryString = `mutation addTags($id: ID!, $tags: [String!]!) {
       tagsAdd(id: $id, tags: $tags) {
@@ -871,18 +882,18 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       return res.status(500).json({message: 'There was an issue adding tag to customer in Shopify', data: tagError});
     }
 
-    const tagData = await addCustomerTagResponse.json();
+    const addCustomerTagData = await addCustomerTagResponse.json();
     
     // Check for tag errors
-    if (tagData.data?.tagsAdd?.userErrors?.length > 0) {
+    if (addCustomerTagData.data?.tagsAdd?.userErrors?.length > 0) {
       return res.status(500).json({
         message: 'GraphQL errors in tag addition',
-        data: tagData.data.tagsAdd.userErrors
+        data: addCustomerTagData.data.tagsAdd.userErrors
       });
     }
-  // } catch (error) {
-  //   res.json({message: 'There was an issue processing the request', data: error});
-  // }
+  } catch (error) {
+    res.json({message: 'There was an issue processing the request', data: error});
+  }
 
   res.status(202).json({message: 'Submission successful!'});
 });
