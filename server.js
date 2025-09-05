@@ -752,14 +752,6 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
           lastName
           email
           phone
-          metafields(first: 25) {
-            nodes {
-              id
-              namespace
-              key
-              value
-            }
-          }
         }
         userErrors {
           field
@@ -773,15 +765,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
         'firstName': first_name,
         'lastName': last_name,
         'email': email,
-        'phone': phone,
-        'metafields': [
-          {
-            'namespace': 'custom',
-            'key': 'medicaid_case_number',
-            'value': caseNumber,
-            'type': 'single_line_text_field'
-          }
-        ]
+        'phone': phone
       },
       'identifier': {
         'phone': phone
@@ -801,7 +785,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     }
 
     const createCustomerData = await createCustomerResponse.json();
-    const customerId = createCustomerData.customer.id;
+    const customerId = createCustomerData.data.customerSet.customer.id;
 
     // const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
     //   customerUpdate(input: $input) {
