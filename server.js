@@ -692,7 +692,7 @@ app.post('/check-medicaid-verification-password', (req, res) => {
 app.post('/medicaid-eligibility-approved', async (req, res) => {
   const { first_name, last_name, phone, email, caseNumber } = req.body;
 
-  try {
+  
     const body = `{
       "data":{
         "type":"event",
@@ -866,9 +866,9 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     if (!addCustomerTagResponse.ok) {
       addCustomerTagResponse.json().then(data => res.json({message: 'There was an issue adding tag to customer in Shopify', data: data}));
     }
-  } catch (error) {
-    res.json({message: 'There was an issue processing the request', data: error});
-  }
+  // } catch (error) {
+  //   res.json({message: 'There was an issue processing the request', data: error});
+  // }
 
   res.status(202).json({message: 'Submission successful!'});
 });
