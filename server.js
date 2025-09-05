@@ -741,7 +741,8 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     const klaviyoResponse = await fetch(url, options);
 
     if (!klaviyoResponse.ok) {
-      klaviyoResponse.json().then(data => res.json({message: 'There was an issue sending event to Klaviyo', data: data}));
+      const klaviyoError = await klaviyoResponse.json();
+      return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
     }
 
     const createCustomerQueryString = `mutation customerSet($input: CustomerInput!, $identifier: CustomerIdentifier!) {
@@ -781,7 +782,8 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     });
 
     if (!createCustomerResponse.ok) {
-      createCustomerResponse.json().then(data => res.json({message: 'There was an issue creating/updating customer in Shopify', data: data}));
+      const customerError = await createCustomerResponse.json();
+      return res.status(500).json({message: 'There was an issue creating/updating customer in Shopify', data: customerError});
     }
 
     const createCustomerData = await createCustomerResponse.json();
@@ -853,7 +855,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     const addCustomerTagVariables = {
       'id': customerId,
-      'tags': ['Medicaid Eligibile']
+      'tags': ['Medicaid Eligible']
     };
 
     const addCustomerTagResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
@@ -865,7 +867,8 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     });
 
     if (!addCustomerTagResponse.ok) {
-      addCustomerTagResponse.json().then(data => res.json({message: 'There was an issue adding tag to customer in Shopify', data: data}));
+      const tagError = await addCustomerTagResponse.json();
+      return res.status(500).json({message: 'There was an issue adding tag to customer in Shopify', data: tagError});
     }
 
     const tagData = await addCustomerTagResponse.json();
