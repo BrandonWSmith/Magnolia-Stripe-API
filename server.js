@@ -785,6 +785,23 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     }
 
     const createCustomerData = await createCustomerResponse.json();
+
+    // Check for GraphQL errors
+    if (createCustomerData.data?.customerSet?.userErrors?.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in customer creation',
+        data: createCustomerData.data.customerSet.userErrors
+      });
+    }
+
+    // Check if customer was actually created
+    if (!createCustomerData.data?.customerSet?.customer?.id) {
+      return res.status(500).json({
+        message: 'No customer ID returned from Shopify',
+        data: createCustomerData
+      });
+    }
+
     const customerId = createCustomerData.data.customerSet.customer.id;
 
     // const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
@@ -836,7 +853,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     const addCustomerTagVariables = {
       'id': customerId,
-      'tags': 'Medicaid Eligibile'
+      'tags': ['Medicaid Eligibile']
     };
 
     const addCustomerTagResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
@@ -849,6 +866,16 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     if (!addCustomerTagResponse.ok) {
       addCustomerTagResponse.json().then(data => res.json({message: 'There was an issue adding tag to customer in Shopify', data: data}));
+    }
+
+    const tagData = await addCustomerTagResponse.json();
+    
+    // Check for tag errors
+    if (tagData.data?.tagsAdd?.userErrors?.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in tag addition',
+        data: tagData.data.tagsAdd.userErrors
+      });
     }
   // } catch (error) {
   //   res.json({message: 'There was an issue processing the request', data: error});
