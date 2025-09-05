@@ -788,7 +788,6 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     const setCustomerData = await setCustomerResponse.json();
 
-    // Check for GraphQL errors
     if (setCustomerData.data?.customerSet?.userErrors?.length > 0) {
       return res.status(500).json({
         message: 'GraphQL errors in customer creation',
@@ -796,7 +795,6 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       });
     }
 
-    // Check if customer was actually created
     if (!setCustomerData.data?.data?.customerSet?.customer?.id) {
       return res.status(500).json({
         message: 'No customer ID returned from Shopify',
@@ -848,7 +846,6 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     const metafieldData = await metafieldResponse.json();
 
-    // Check for metafield errors
     if (metafieldData.data?.metafieldsSet?.userErrors?.length > 0) {
       return res.status(500).json({
         message: 'GraphQL errors in metafield creation',
@@ -886,8 +883,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     }
 
     const addCustomerTagData = await addCustomerTagResponse.json();
-    
-    // Check for tag errors
+
     if (addCustomerTagData.data?.tagsAdd?.userErrors?.length > 0) {
       return res.status(500).json({
         message: 'GraphQL errors in tag addition',
