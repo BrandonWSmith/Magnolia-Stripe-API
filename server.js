@@ -689,54 +689,191 @@ app.post('/check-medicaid-verification-password', (req, res) => {
   }
 });
 
-app.post('/klaviyo-medicaid-eligibility-approved', async (req, res) => {
-  const { first_name, last_name, email } = req.body;
-  const body = `{
-    "data":{
-      "type":"event",
-      "attributes":{
-        "properties":{
-          "first_name":"${first_name}",
-          "last_name":"${last_name}",
-          "email":"${email}"
-        },
-        "metric":{
-          "data":{
-            "type":"metric",
-            "attributes":{
-              "name":"Medicaid Eligibility Approved"
+app.post('/medicaid-eligibility-approved', async (req, res) => {
+  const { first_name, last_name, phone, email, caseNumber } = req.body;
+
+  try {
+    const body = `{
+      "data":{
+        "type":"event",
+        "attributes":{
+          "properties":{
+            "first_name":"${first_name}",
+            "last_name":"${last_name}",
+            "phone_number":"${phone}",
+            "email":"${email}"
+          },
+          "metric":{
+            "data":{
+              "type":"metric",
+              "attributes":{
+                "name":"Medicaid Eligibility Approved"
+              }
             }
-          }
-        },
-        "profile":{
-          "data":{
-            "type":"profile",
-            "attributes":{
-              "email":"${email}",
-              "first_name":"${first_name}",
-              "last_name":"${last_name}"
+          },
+          "profile":{
+            "data":{
+              "type":"profile",
+              "attributes":{
+                "email":"${email}",
+                "phone_number":"${phone}",
+                "first_name":"${first_name}",
+                "last_name":"${last_name}"
+              }
             }
           }
         }
       }
-    }
-  }`;
-  
-  const url = 'https://a.klaviyo.com/api/events';
-  const options = {
-    method: 'POST',
-    headers: {
-      accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
-      'content-type': 'application/vnd.api+json',
-      Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
-    },
-    body: body
-  };
+    }`;
+    
+    const url = 'https://a.klaviyo.com/api/events';
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/vnd.api+json',
+        revision: '2025-04-15',
+        'content-type': 'application/vnd.api+json',
+        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+      },
+      body: body
+    };
 
-  fetch(url, options)
-    .then(response => response.status === 202 ? res.send() : console.log(response))
-    .catch(err => console.error(err));
+    const klaviyoResponse =await fetch(url, options);
+
+    if (!klaviyoResponse.ok) {
+      klaviyoResponse.json().then(data => console.log(data));
+      res.json({message: 'There was an issue sending event to Klaviyo'});
+    }
+
+    const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
+      customerSet(input: $input, identifier: $identifier) {
+        customer {
+          id
+          firstName
+          lastName
+          defaultEmailAddress {
+            emailAddress
+          }
+          defaultPhoneNumber {
+            phoneNumber
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`;
+
+    const setCustomerVariables = {
+      'input': {
+        'firstName': first_name,
+        'lastName': last_name,
+        'tags': 'Medicaid Eligibile'
+      },
+      'identifier': {
+        'email': email,
+        'phone': phone
+      }
+    };
+
+    const setCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: setCustomerQueryString, variables: setCustomerVariables}),
+    });
+
+    if (!setCustomerResponse.ok) {
+      setCustomerResponse.json().then(data => console.log(data));
+      res.json({message: 'There was an issue creating/updating customer in Shopify'});
+    }
+
+    const setCustomerData = await setCustomerResponse.json();
+    const customerId = setCustomerData.data.customer.id;
+
+    const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
+      customerUpdate(input: $input) {
+        customer {
+          id
+          metafields(first: 3) {
+            edges {
+              node {
+                id
+                namespace
+                key
+                value
+              }
+            }
+          }
+        }
+        userErrors {
+          message
+          field
+        }
+      }
+    }`;
+
+    const updateCustomerVariables = {
+      'input': {
+        'id': customerId,
+        'metafields': [
+          {
+            'id': 'gid://shopify/Metafield/160764920114',
+            'value': caseNumber
+          }
+        ]
+      }
+    };
+
+    const updateCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: updateCustomerQueryString, variables: updateCustomerVariables}),
+    });
+
+    if (!updateCustomerResponse.ok) {
+      updateCustomerResponse.json().then(data => console.log(data));
+      res.json({message: 'There was an issue updating customer metafield in Shopify'});
+    }
+
+    const addCustomerTagQueryString = `mutation addTags($id: ID!, $tags: [String!]!) {
+      tagsAdd(id: $id, tags: $tags) {
+        node {
+          id
+        }
+        userErrors {
+          message
+        }
+      }
+    }`;
+
+    const addCustomerTagVariables = {
+      'id': customerId,
+      'tags': 'Medicaid Eligibile'
+    };
+
+    const addCustomerTagResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: addCustomerTagQueryString, variables: addCustomerTagVariables}),
+    });
+
+    if (!addCustomerTagResponse.ok) {
+      addCustomerTagResponse.json().then(data => console.log(data));
+      res.json({message: 'There was an issue adding tag to customer in Shopify'});
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({message: 'There was an issue processing the request'});
+  }
+
+  res.status(202).json({message: 'Submission successful!'});
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
