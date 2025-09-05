@@ -738,7 +738,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       body: body
     };
 
-    const klaviyoResponse =await fetch(url, options);
+    const klaviyoResponse = await fetch(url, options);
 
     if (!klaviyoResponse.ok) {
       klaviyoResponse.json().then(data => res.json({message: 'There was an issue sending event to Klaviyo', data: data}));
@@ -769,7 +769,8 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       'input': {
         'firstName': first_name,
         'lastName': last_name,
-        'tags': 'Medicaid Eligibile'
+        'email': email,
+        'phone': phone
       },
       'identifier': {
         'email': email,
