@@ -897,4 +897,64 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
   res.status(202).json({message: 'Submission successful!'});
 });
 
+app.post('/medicaid-eligibility-declined', async (req, res) => {
+  const { first_name, last_name, phone, email } = req.body;
+
+  try {
+    const body = `{
+      "data":{
+        "type":"event",
+        "attributes":{
+          "properties":{
+            "first_name":"${first_name}",
+            "last_name":"${last_name}",
+            "phone_number":"${phone}",
+            "email":"${email}"
+          },
+          "metric":{
+            "data":{
+              "type":"metric",
+              "attributes":{
+                "name":"Medicaid Eligibility Declined"
+              }
+            }
+          },
+          "profile":{
+            "data":{
+              "type":"profile",
+              "attributes":{
+                "email":"${email}",
+                "phone_number":"${phone}",
+                "first_name":"${first_name}",
+                "last_name":"${last_name}"
+              }
+            }
+          }
+        }
+      }
+    }`;
+    
+    const url = 'https://a.klaviyo.com/api/events';
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/vnd.api+json',
+        revision: '2025-04-15',
+        'content-type': 'application/vnd.api+json',
+        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+      },
+      body: body
+    };
+
+    const klaviyoResponse = await fetch(url, options);
+
+    if (!klaviyoResponse.ok) {
+      const klaviyoError = await klaviyoResponse.json();
+      return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
+    }
+  } catch (error) {
+    return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: error});
+  }
+});
+
 app.listen(port, () => console.log(`Listening on port ${port}`));
