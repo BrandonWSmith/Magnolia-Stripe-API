@@ -741,8 +741,8 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     const klaviyoResponse =await fetch(url, options);
 
     if (!klaviyoResponse.ok) {
-      klaviyoResponse.json().then(data => console.log(data));
-      res.json({message: 'There was an issue sending event to Klaviyo'});
+      klaviyoResponse.json().then(data => res.json({message: 'There was an issue sending event to Klaviyo', data: data}));
+      
     }
 
     const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
@@ -786,8 +786,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     });
 
     if (!setCustomerResponse.ok) {
-      setCustomerResponse.json().then(data => console.log(data));
-      res.json({message: 'There was an issue creating/updating customer in Shopify'});
+      setCustomerResponse.json().then(data => res.json({message: 'There was an issue creating/updating customer in Shopify', data: data}));
     }
 
     const setCustomerData = await setCustomerResponse.json();
@@ -836,8 +835,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     });
 
     if (!updateCustomerResponse.ok) {
-      updateCustomerResponse.json().then(data => console.log(data));
-      res.json({message: 'There was an issue updating customer metafield in Shopify'});
+      updateCustomerResponse.json().then(data => res.json({message: 'There was an issue updating customer metafield in Shopify', data: data}));
     }
 
     const addCustomerTagQueryString = `mutation addTags($id: ID!, $tags: [String!]!) {
@@ -865,12 +863,10 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     });
 
     if (!addCustomerTagResponse.ok) {
-      addCustomerTagResponse.json().then(data => console.log(data));
-      res.json({message: 'There was an issue adding tag to customer in Shopify'});
+      addCustomerTagResponse.json().then(data => res.json({message: 'There was an issue adding tag to customer in Shopify', data: data}));
     }
   } catch (error) {
-    console.log(error);
-    res.json({message: 'There was an issue processing the request'});
+    res.json({message: 'There was an issue processing the request', data: error});
   }
 
   res.status(202).json({message: 'Submission successful!'});
