@@ -804,7 +804,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       });
     }
 
-    const customerId = createCustomerData.data.customerSet.customer.id;
+    const customerId = createCustomerData.data.data.customerSet.customer.id;
 
     // const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
     //   customerUpdate(input: $input) {
