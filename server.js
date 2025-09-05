@@ -744,11 +744,22 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       klaviyoResponse.json().then(data => res.json({message: 'There was an issue sending event to Klaviyo', data: data}));
     }
 
-    const createCustomerQueryString = `mutation customerCreate($input: CustomerInput!) {
-    customerCreate(input: $input) {
+    const createCustomerQueryString = `mutation customerSet($input: CustomerInput!, $identifier: CustomerIdentifier!) {
       customerSet(input: $input, identifier: $identifier) {
         customer {
           id
+          firstName
+          lastName
+          email
+          phone
+          metafields(first: 25) {
+            nodes {
+              id
+              namespace
+              key
+              value
+            }
+          }
         }
         userErrors {
           field
@@ -762,6 +773,17 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
         'firstName': first_name,
         'lastName': last_name,
         'email': email,
+        'phone': phone,
+        'metafields': [
+          {
+            'namespace': 'custom',
+            'key': 'medicaid_case_number',
+            'value': caseNumber,
+            'type': 'single_line_text_field'
+          }
+        ]
+      },
+      'identifier': {
         'phone': phone
       }
     };
