@@ -791,7 +791,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     }
 
     const setCustomerData = await setCustomerResponse.json();
-    const customerId = setCustomerData.data.customer.id;
+    const customerId = setCustomerData.customer.id;
 
     const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
       customerUpdate(input: $input) {
