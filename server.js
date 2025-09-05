@@ -806,50 +806,53 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     const customerId = setCustomerData.data.data.customerSet.customer.id;
 
-    const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
-      customerUpdate(input: $input) {
-        customer {
+    const metafieldQueryString = `mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields {
           id
+          key
+          value
+          namespace
         }
         userErrors {
-          message
           field
+          message
         }
       }
     }`;
 
-    const updateCustomerVariables = {
-      'input': {
-        'id': customerId,
-        'metafields': [
-          {
-            'id': 'gid://shopify/Metafield/160764920114',
-            'value': caseNumber
-          }
-        ]
-      }
+    const metafieldVariables = {
+      metafields: [
+        {
+          ownerId: customerId,
+          namespace: "custom",
+          key: "medicaid_case_number",
+          value: caseNumber,
+          type: "single_line_text_field"
+        }
+      ]
     };
 
-    const updateCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+    const metafieldResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({queryString: updateCustomerQueryString, variables: updateCustomerVariables}),
+      body: JSON.stringify({queryString: metafieldQueryString, variables: metafieldVariables}),
     });
 
-    if (!updateCustomerResponse.ok) {
-      const updateCustomerError = await updateCustomerResponse.json();
-      return res.status(500).json({message: 'There was an issue creating/updating customer in Shopify', data: updateCustomerError});
+    if (!metafieldResponse.ok) {
+      const metafieldError = await metafieldResponse.json();
+      return res.status(500).json({message: 'There was an issue creating metafield in Shopify', data: metafieldError});
     }
 
-    const updateCustomerData = await updateCustomerResponse.json();
+    const metafieldData = await metafieldResponse.json();
 
-    // Check for GraphQL errors
-    if (updateCustomerData.data?.customerUpdate?.userErrors?.length > 0) {
+    // Check for metafield errors
+    if (metafieldData.data?.metafieldsSet?.userErrors?.length > 0) {
       return res.status(500).json({
-        message: 'GraphQL errors in customer creation',
-        data: updateCustomerData.data.customerUpdate.userErrors
+        message: 'GraphQL errors in metafield creation',
+        data: metafieldData.data.metafieldsSet.userErrors
       });
     }
 
