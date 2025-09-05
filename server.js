@@ -693,7 +693,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
   const { first_name, last_name, phone, email, caseNumber } = req.body;
 
   //try {
-    /*const body = `{
+    const body = `{
       "data":{
         "type":"event",
         "attributes":{
@@ -742,7 +742,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     if (!klaviyoResponse.ok) {
       klaviyoResponse.json().then(data => res.json({message: 'There was an issue sending event to Klaviyo', data: data}));
-    }*/
+    }
 
     const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
       customerSet(input: $input, identifier: $identifier) {
@@ -764,7 +764,6 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
         'phone': phone
       },
       'identifier': {
-        'email': email,
         'phone': phone
       }
     };
@@ -784,7 +783,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     const setCustomerData = await setCustomerResponse.json();
     const customerId = setCustomerData.customer.id;
 
-    /*const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
+    const updateCustomerQueryString = `mutation updateCustomerMetafields($input: CustomerInput!) {
       customerUpdate(input: $input) {
         customer {
           id
@@ -846,7 +845,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     if (!addCustomerTagResponse.ok) {
       addCustomerTagResponse.json().then(data => res.json({message: 'There was an issue adding tag to customer in Shopify', data: data}));
-    }*/
+    }
   // } catch (error) {
   //   res.json({message: 'There was an issue processing the request', data: error});
   // }
