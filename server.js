@@ -765,7 +765,8 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
         'phone': phone,
         'metafields': [
           {
-            'id': 'gid://shopify/Metafield/160764920114',
+            'namespace': 'custom',
+            'key': 'medicaid_case_number',
             'value': caseNumber
           }
         ]
