@@ -762,14 +762,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
         'firstName': first_name,
         'lastName': last_name,
         'email': email,
-        'phone': phone,
-        'metafields': [
-          {
-            'namespace': 'custom',
-            'key': 'medicaid_case_number',
-            'value': caseNumber
-          }
-        ]
+        'phone': phone
       }
     };
 
