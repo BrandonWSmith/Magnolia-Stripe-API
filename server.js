@@ -256,13 +256,13 @@ app.post('/shopify-admin-api-test-store', async (req, res) => {
   const { queryString, variables } = req.body;
   const shopify = shopifyApi({
     apiVersion: LATEST_API_VERSION,
-    apiKey: process.env.SHOPIFY_API_KEY,
-    apiSecretKey: process.env.SHOPIFY_API_SECRET_KEY,
+    apiKey: 'c5bd34b79f76095c6340ad5b65b62f4d',
+    apiSecretKey: '41319fc85705ae5aa3b3221fc19a31f1',
     scopes: ['write_orders', 'write_customers'],
     hostName: 'https://impact-ma-andorra-wrapped.trycloudflare.com',
     isEmbeddedApp: true,
     isCustomStoreApp: true,
-    adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+    adminApiAccessToken: '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',
   });
   const sessionId = shopify.session.getOfflineId('brandon-smiths-test-store.myshopify.com');
   const session = new Session({
