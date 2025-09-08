@@ -252,6 +252,38 @@ app.post('/shopify-admin-api', async (req, res) => {
   }
 });
 
+app.post('/shopify-admin-api-test-store', async (req, res) => {
+  const { queryString, variables } = req.body;
+  const shopify = shopifyApi({
+    apiVersion: LATEST_API_VERSION,
+    apiKey: process.env.SHOPIFY_API_KEY,
+    apiSecretKey: process.env.SHOPIFY_API_SECRET_KEY,
+    scopes: ['write_orders', 'write_customers'],
+    hostName: 'https://impact-ma-andorra-wrapped.trycloudflare.com',
+    isEmbeddedApp: true,
+    isCustomStoreApp: true,
+    adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+  });
+  const sessionId = shopify.session.getOfflineId('brandon-smiths-test-store.myshopify.com');
+  const session = new Session({
+    id: sessionId,
+    shop: 'brandon-smiths-test-store.myshopify.com',
+    state: 'state',
+    isOnline: false,
+  });
+  const client = new shopify.clients.Graphql({ session: session });
+  try {
+    const data = await client.request(queryString, {
+      variables: variables,
+    });
+
+    res.json({data: data});
+  } catch (e) {
+    console.log(e.response.body);
+    res.status(400).json({data: e});
+  }
+});
+
 app.post('/opt-in', async (req, res) => {
   const { formData } = req.body;
   
