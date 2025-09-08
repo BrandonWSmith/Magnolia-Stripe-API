@@ -991,4 +991,89 @@ app.post('/medicaid-eligibility-declined', async (req, res) => {
   }
 });
 
+app.post('/medicaid-checkout', async (req, res) => {
+  const { totalAmount, customerAmount, medicaidAmount, customerId, cartLines } = req.body;
+  
+  try {
+    const order = await createMedicaidOrder({
+      totalAmount,
+      customerAmount,
+      medicaidAmount,
+      customerId,
+      cartLines
+    });
+    
+    res.json({ 
+      success: true, 
+      orderId: order.id,
+      message: 'Medicaid order created successfully'
+    });
+  } catch (error) {
+    console.error('Medicaid checkout error:', error);
+    res.status(500).json({ 
+      error: 'Unable to process Medicaid checkout. Please call (502) 653-5834 for assistance.' 
+    });
+  }
+});
+
+async function createMedicaidOrder(data) {
+  const { customerAmount, medicaidAmount, customerId, cartLines } = data;
+  
+  const lineItems = cartLines.map(line => ({
+    variantId: line.merchandise.id,
+    quantity: line.quantity
+  }));
+  
+  const orderQueryString = `
+    mutation orderCreate($order: OrderInput!) {
+      orderCreate(order: $order) {
+        order {
+          id
+          name
+          totalPrice
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const orderVariables = {
+    order: {
+      customerId: customerId,
+      lineItems: lineItems,
+      financialStatus: customerAmount > 0 ? "PARTIALLY_PAID" : "PENDING",
+      note: `Medicaid Split Payment - Customer: $${customerAmount}, Medicaid: $${medicaidAmount}`,
+      tags: ["Medicaid Split Payment"],
+      transactions: customerAmount > 0 ? [{
+        kind: "SALE",
+        status: "SUCCESS", 
+        amount: customerAmount.toString(),
+        gateway: "manual"
+      }] : []
+    }
+  };
+
+  const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api-test-store', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      queryString: orderQueryString,
+      variables: orderVariables
+    })
+  });
+
+  const result = await response.json();
+  
+  if (result.data?.data?.orderCreate?.userErrors?.length > 0) {
+    throw new Error(`Order creation failed: ${result.data.data.orderCreate.userErrors[0].message}`);
+  }
+
+  return result.data.data.orderCreate.order;
+}
+
 app.listen(port, () => console.log(`Listening on port ${port}`));
