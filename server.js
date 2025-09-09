@@ -1005,15 +1005,13 @@ app.post('/medicaid-checkout', async (req, res) => {
     
     res.json({ 
       success: true,
-      result: order,
-      //orderId: order.id,
+      orderId: order.id,
       message: 'Medicaid order created successfully'
     });
   } catch (error) {
     console.error('Medicaid checkout error:', error);
     res.status(500).json({ 
       message: 'Unable to process Medicaid checkout. Please call (502) 653-5834 for assistance.',
-      result: result,
       error: error.message,
       details: error.stack
     });
@@ -1078,11 +1076,11 @@ async function createMedicaidOrder(data) {
 
   const result = await response.json();
   
-  if (result.data?.data?.data?.orderCreate?.userErrors?.length > 0) {
-    throw new Error(`Order creation failed: ${result.data.data.data.orderCreate.userErrors[0].message}`);
+  if (result.data?.data?.orderCreate?.userErrors?.length > 0) {
+    throw new Error(`Order creation failed: ${result.data.data.orderCreate.userErrors[0].message}`);
   }
 
-  return result;
+  return result.data.data.orderCreate.order;
 }
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
