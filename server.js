@@ -1004,14 +1004,16 @@ app.post('/medicaid-checkout', async (req, res) => {
     });
     
     res.json({ 
-      success: true, 
-      orderId: order.id,
+      success: true,
+      result: order,
+      //orderId: order.id,
       message: 'Medicaid order created successfully'
     });
   } catch (error) {
     console.error('Medicaid checkout error:', error);
     res.status(500).json({ 
       message: 'Unable to process Medicaid checkout. Please call (502) 653-5834 for assistance.',
+      result: result,
       error: error.message,
       details: error.stack
     });
@@ -1075,7 +1077,7 @@ async function createMedicaidOrder(data) {
     throw new Error(`Order creation failed: ${result.data.data.data.orderCreate.userErrors[0].message}`);
   }
 
-  return result.data.data.data.orderCreate.order;
+  return result;
 }
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
