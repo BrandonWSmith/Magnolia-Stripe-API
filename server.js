@@ -1071,11 +1071,11 @@ async function createMedicaidOrder(data) {
 
   const result = await response.json();
   
-  if (result.data?.orderCreate?.userErrors?.length > 0) {
-    throw new Error(`Order creation failed: ${result.data.orderCreate.userErrors[0].message}`);
+  if (result.data?.data?.data?.orderCreate?.userErrors?.length > 0) {
+    throw new Error(`Order creation failed: ${result.data.data.data.orderCreate.userErrors[0].message}`);
   }
 
-  return result.data.orderCreate.order;
+  return result.data.data.data.orderCreate.order;
 }
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
