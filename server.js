@@ -994,7 +994,7 @@ app.post('/medicaid-eligibility-declined', async (req, res) => {
 const recentMedicaidOrders = new Map(); // Store recent orders to prevent duplicates
 
 app.post('/medicaid-checkout', async (req, res) => {
-  const { totalAmount, customerAmount, medicaidAmount, customerId, cartLines } = req.body;
+  const { totalAmount, customerAmount, medicaidAmount, customerId, cartLines, customerEmail } = req.body;
   
   // Create a unique key for this request
   const requestKey = `${customerId}-${totalAmount}-${cartLines.length}`;
@@ -1031,18 +1031,29 @@ app.post('/medicaid-checkout', async (req, res) => {
       cartLines
     });
     
-    // Extract numeric order ID for redirect URL
+    // Extract numeric order ID
     const numericOrderId = order.id.split('/').pop();
-    const orderNumber = order.name; // This is the order number like "#1001"
+    const orderNumber = order.name;
     
-    // Create redirect URL - you can customize this
-    const redirectUrl = `/pages/medicaid-order-confirmation?order=${numericOrderId}&number=${orderNumber.replace('#', '')}`;
+    // Send Klaviyo metric event for Medicaid order completion
+    if (customerEmail) {
+      await sendMedicaidKlaviyoEvent({
+        email: customerEmail,
+        orderNumber: orderNumber,
+        orderId: numericOrderId,
+        totalAmount,
+        customerAmount,
+        medicaidAmount,
+        customerId,
+        cartLines
+      });
+    }
     
     res.json({ 
       success: true,
       orderId: order.id,
       orderNumber: orderNumber,
-      redirectUrl: redirectUrl,
+      redirectUrl: `/pages/medicaid-order-confirmation?order=${numericOrderId}&number=${orderNumber.replace('#', '')}`,
       message: 'Medicaid order created successfully'
     });
   } catch (error) {
@@ -1121,6 +1132,87 @@ async function createMedicaidOrder(data) {
   }
 
   return result.data.data.orderCreate.order;
+}
+
+async function sendMedicaidKlaviyoEvent(orderData) {
+  const { email, orderNumber, orderId, totalAmount, customerAmount, medicaidAmount, customerId, cartLines } = orderData;
+  
+  try {
+    console.log('Sending Medicaid order event to Klaviyo for:', email);
+    
+    // Prepare line items for Klaviyo
+    const lineItems = cartLines.map((line, index) => ({
+      ProductID: line.merchandise.id,
+      ProductName: `Product ${index + 1}`, // You might want to fetch actual product names
+      Quantity: line.quantity,
+      ItemPrice: (totalAmount / cartLines.length).toFixed(2), // Rough estimate, you may want to calculate actual prices
+      RowTotal: (totalAmount / cartLines.length * line.quantity).toFixed(2)
+    }));
+    
+    const klaviyoEventData = {
+      token: process.env.KLAVIYO_API_KEY,
+      event: 'Medicaid Order Placed',
+      customer_properties: {
+        $email: email,
+        $id: customerId
+      },
+      properties: {
+        // Order details
+        OrderId: orderId,
+        OrderNumber: orderNumber,
+        
+        // Payment breakdown
+        TotalAmount: totalAmount,
+        CustomerAmount: customerAmount,
+        MedicaidAmount: medicaidAmount,
+        
+        // Order items
+        Items: lineItems,
+        ItemCount: cartLines.reduce((total, line) => total + line.quantity, 0),
+        
+        // Additional properties for email template
+        PaymentBreakdown: {
+          total: totalAmount.toFixed(2),
+          customer: customerAmount.toFixed(2),
+          medicaid: medicaidAmount.toFixed(2)
+        },
+        
+        // Useful for email personalization
+        HasCustomerPayment: customerAmount > 0,
+        IsFullyMedicaidCovered: customerAmount === 0,
+        
+        // Contact info for template
+        SupportPhone: "(502) 653-5834",
+        
+        // Timestamp
+        OrderDate: new Date().toISOString(),
+        
+        // Source tracking
+        OrderSource: "Medicaid Split Payment",
+        CheckoutType: "Medicaid Checkout Extension"
+      },
+      time: Math.floor(Date.now() / 1000) // Unix timestamp
+    };
+
+    const response = await fetch('https://a.klaviyo.com/api/track', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(klaviyoEventData)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Klaviyo API error: ${response.status} - ${errorText}`);
+    }
+
+    console.log('Klaviyo Medicaid order event sent successfully');
+    
+  } catch (error) {
+    console.error('Error sending Klaviyo Medicaid order event:', error);
+    // Don't throw here - we don't want to fail the order creation if Klaviyo fails
+  }
 }
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
