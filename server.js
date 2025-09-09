@@ -993,6 +993,7 @@ app.post('/medicaid-eligibility-declined', async (req, res) => {
 
 const recentMedicaidOrders = new Map(); // Store recent orders to prevent duplicates
 
+// Update the medicaid-checkout endpoint
 app.post('/medicaid-checkout', async (req, res) => {
   const { totalAmount, customerAmount, medicaidAmount, customerId, cartLines } = req.body;
   
@@ -1031,9 +1032,13 @@ app.post('/medicaid-checkout', async (req, res) => {
       cartLines
     });
     
+    const numericOrderId = order.id.split('/').pop();
+    const orderNumber = order.name;
+    
     res.json({ 
       success: true,
       orderId: order.id,
+      orderNumber: orderNumber,
       message: 'Medicaid order created successfully'
     });
   } catch (error) {
@@ -1049,6 +1054,7 @@ app.post('/medicaid-checkout', async (req, res) => {
   }
 });
 
+// Simplified createMedicaidOrder function
 async function createMedicaidOrder(data) {
   const { customerAmount, medicaidAmount, customerId, cartLines } = data;
   
@@ -1077,22 +1083,17 @@ async function createMedicaidOrder(data) {
     order: {
       customerId: customerId,
       lineItems: lineItems,
-      financialStatus: customerAmount > 0 ? "PARTIALLY_PAID" : "PENDING",
-      note: `Medicaid Split Payment - Customer: $${customerAmount}, Medicaid: $${medicaidAmount}`,
-      tags: ["Medicaid Split Payment"],
-      transactions: customerAmount > 0 ? [{
-        kind: "SALE",
-        status: "SUCCESS", 
-        amountSet: {
-          shopMoney: {
-            amount: customerAmount.toString(),
-            currencyCode: "USD"
-          },
-        },
-        gateway: "manual"
-      }] : []
+      financialStatus: "PENDING", // Always PENDING since we're waiting for Medicaid payment
+      note: `Medicaid Split Payment - Customer: $${customerAmount.toFixed(2)}, Medicaid: $${medicaidAmount.toFixed(2)}${customerAmount === 0 ? ' (Fully Medicaid Covered)' : ''}`,
+      tags: [
+        "Medicaid Split Payment",
+        customerAmount === 0 ? "Fully Medicaid Covered" : "Partial Medicaid Coverage",
+        "Pending Medicaid Payment"
+      ]
     }
   };
+
+  console.log('Sending GraphQL request with variables:', JSON.stringify(orderVariables, null, 2));
 
   const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api-test-store', {
     method: 'POST',
@@ -1106,9 +1107,14 @@ async function createMedicaidOrder(data) {
   });
 
   const result = await response.json();
+  console.log('Full API response:', JSON.stringify(result, null, 2));
   
   if (result.data?.data?.orderCreate?.userErrors?.length > 0) {
     throw new Error(`Order creation failed: ${result.data.data.orderCreate.userErrors[0].message}`);
+  }
+
+  if (!result.data?.data?.orderCreate?.order) {
+    throw new Error('No order returned from Shopify API');
   }
 
   return result.data.data.orderCreate.order;
