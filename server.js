@@ -1029,7 +1029,7 @@ async function createMedicaidOrder(data) {
   }));
   
   const orderQueryString = `
-    mutation orderCreate($order: OrderInput!) {
+    mutation orderCreate($order: OrderCreateOrderInput!) {
       orderCreate(order: $order) {
         order {
           id
