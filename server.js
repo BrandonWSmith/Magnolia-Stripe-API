@@ -1054,7 +1054,12 @@ async function createMedicaidOrder(data) {
       transactions: customerAmount > 0 ? [{
         kind: "SALE",
         status: "SUCCESS", 
-        amount: customerAmount.toString(),
+        amountSet: {
+          shopMoney: {
+            amount: customerAmount.toString(),
+            currencyCode: "USD"
+          },
+        },
         gateway: "manual"
       }] : []
     }
