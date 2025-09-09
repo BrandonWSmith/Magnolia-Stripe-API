@@ -1011,7 +1011,8 @@ app.post('/medicaid-checkout', async (req, res) => {
   } catch (error) {
     console.error('Medicaid checkout error:', error);
     res.status(500).json({ 
-      error: 'Unable to process Medicaid checkout. Please call (502) 653-5834 for assistance.' 
+      message: 'Unable to process Medicaid checkout. Please call (502) 653-5834 for assistance.',
+      error: error
     });
   }
 });
