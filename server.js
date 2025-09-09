@@ -991,8 +991,36 @@ app.post('/medicaid-eligibility-declined', async (req, res) => {
   }
 });
 
+const recentMedicaidOrders = new Map(); // Store recent orders to prevent duplicates
+
 app.post('/medicaid-checkout', async (req, res) => {
   const { totalAmount, customerAmount, medicaidAmount, customerId, cartLines } = req.body;
+  
+  // Create a unique key for this request
+  const requestKey = `${customerId}-${totalAmount}-${cartLines.length}`;
+  
+  // Check if we've processed this recently (within 30 seconds)
+  if (recentMedicaidOrders.has(requestKey)) {
+    const lastProcessed = recentMedicaidOrders.get(requestKey);
+    if (Date.now() - lastProcessed < 30000) {
+      console.log('Duplicate Medicaid order request blocked');
+      return res.json({ 
+        success: true,
+        message: 'Order already processed recently',
+        duplicate: true
+      });
+    }
+  }
+  
+  // Mark this request as being processed
+  recentMedicaidOrders.set(requestKey, Date.now());
+  
+  // Clean up old entries (older than 1 minute)
+  for (const [key, timestamp] of recentMedicaidOrders.entries()) {
+    if (Date.now() - timestamp > 60000) {
+      recentMedicaidOrders.delete(key);
+    }
+  }
   
   try {
     const order = await createMedicaidOrder({
@@ -1009,6 +1037,9 @@ app.post('/medicaid-checkout', async (req, res) => {
       message: 'Medicaid order created successfully'
     });
   } catch (error) {
+    // Remove from cache on error so it can be retried
+    recentMedicaidOrders.delete(requestKey);
+    
     console.error('Medicaid checkout error:', error);
     res.status(500).json({ 
       message: 'Unable to process Medicaid checkout. Please call (502) 653-5834 for assistance.',
