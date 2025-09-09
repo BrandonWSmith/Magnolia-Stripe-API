@@ -1031,9 +1031,18 @@ app.post('/medicaid-checkout', async (req, res) => {
       cartLines
     });
     
+    // Extract numeric order ID for redirect URL
+    const numericOrderId = order.id.split('/').pop();
+    const orderNumber = order.name; // This is the order number like "#1001"
+    
+    // Create redirect URL - you can customize this
+    const redirectUrl = `/pages/medicaid-order-confirmation?order=${numericOrderId}&number=${orderNumber.replace('#', '')}`;
+    
     res.json({ 
       success: true,
       orderId: order.id,
+      orderNumber: orderNumber,
+      redirectUrl: redirectUrl,
       message: 'Medicaid order created successfully'
     });
   } catch (error) {
