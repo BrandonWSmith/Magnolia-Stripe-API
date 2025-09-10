@@ -918,8 +918,6 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       });
     }
 
-    const giftCardCode = createGiftCardData.data.giftCardCreate.giftCardCode;
-
     const body = `{
       "data":{
         "type":"event",
@@ -929,7 +927,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
             "last_name":"${last_name}",
             "phone_number":"${phone}",
             "email":"${email}",
-            "gift_card":"${giftCardCode}"
+            "gift_card":"${createGiftCardData}"
           },
           "metric":{
             "data":{
@@ -973,7 +971,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
     }
   } catch (error) {
-    res.json({message: 'There was an issue processing the request', data: error, createGiftCardData: createGiftCardData});
+    res.json({message: 'There was an issue processing the request', data: error});
   }
 
   res.status(202).json({message: 'Submission successful!'});
