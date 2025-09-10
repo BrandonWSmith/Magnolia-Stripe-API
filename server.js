@@ -711,8 +711,7 @@ app.get('/get-form-data', (req, res) => {
 
 app.post('/check-medicaid-verification-password', (req, res) => {
   const { password } = req.body;
-  //const correctPassword = process.env.MEDICAID_VERIFICATION_PASSWORD;
-  const correctPassword = 'Magnolia1234'; // Temporary for testing
+  const correctPassword = process.env.MEDICAID_VERIFICATION_PASSWORD;
 
   if (password === correctPassword) {
     res.json({valid: true});
