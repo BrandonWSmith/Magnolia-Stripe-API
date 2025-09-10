@@ -891,7 +891,6 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
     const createGiftCardVariables = {
       "input": {
         "initialValue": 1200.00,
-        "customerId": customerId,
         "expiresOn": expiresOn.toISOString().split('T')[0]
       }
     };
