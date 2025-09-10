@@ -721,7 +721,7 @@ app.post('/check-medicaid-verification-password', (req, res) => {
 });
 
 app.post('/medicaid-eligibility-approved', async (req, res) => {
-  const { first_name, last_name, phone, email, caseNumber } = req.body;
+  const { first_name, last_name, phone, email, urgency, caseNumber } = req.body;
 
   try {
     const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
@@ -928,6 +928,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
             "last_name":"${last_name}",
             "phone_number":"${phone}",
             "email":"${email}",
+            "urgnecy":"${urgency}",
             "gift_card":"${giftCardCode}"
           },
           "metric":{
@@ -979,7 +980,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 });
 
 app.post('/medicaid-eligibility-declined', async (req, res) => {
-  const { first_name, last_name, phone, email } = req.body;
+  const { first_name, last_name, phone, email, urgency } = req.body;
 
   try {
     const body = `{
@@ -990,7 +991,8 @@ app.post('/medicaid-eligibility-declined', async (req, res) => {
             "first_name":"${first_name}",
             "last_name":"${last_name}",
             "phone_number":"${phone}",
-            "email":"${email}"
+            "email":"${email}",
+            "urgnecy":"${urgency}"
           },
           "metric":{
             "data":{
