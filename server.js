@@ -973,7 +973,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
     }
   } catch (error) {
-    res.json({message: 'There was an issue processing the request', data: error});
+    res.json({message: 'There was an issue processing the request', data: error, createGiftCardData: createGiftCardData});
   }
 
   res.status(202).json({message: 'Submission successful!'});
