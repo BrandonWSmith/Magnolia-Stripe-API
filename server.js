@@ -725,58 +725,6 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
   const { first_name, last_name, phone, email, caseNumber } = req.body;
 
   try {
-    const body = `{
-      "data":{
-        "type":"event",
-        "attributes":{
-          "properties":{
-            "first_name":"${first_name}",
-            "last_name":"${last_name}",
-            "phone_number":"${phone}",
-            "email":"${email}"
-          },
-          "metric":{
-            "data":{
-              "type":"metric",
-              "attributes":{
-                "name":"Medicaid Eligibility Approved"
-              }
-            }
-          },
-          "profile":{
-            "data":{
-              "type":"profile",
-              "attributes":{
-                "email":"${email}",
-                "phone_number":"${phone}",
-                "first_name":"${first_name}",
-                "last_name":"${last_name}"
-              }
-            }
-          }
-        }
-      }
-    }`;
-    
-    const url = 'https://a.klaviyo.com/api/events';
-    const options = {
-      method: 'POST',
-      headers: {
-        accept: 'application/vnd.api+json',
-        revision: '2025-04-15',
-        'content-type': 'application/vnd.api+json',
-        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
-      },
-      body: body
-    };
-
-    const klaviyoResponse = await fetch(url, options);
-
-    if (!klaviyoResponse.ok) {
-      const klaviyoError = await klaviyoResponse.json();
-      return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
-    }
-
     const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
     customerSet(input: $input, identifier: $identifier) {
         customer {
@@ -922,6 +870,108 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
         data: addCustomerTagData.data.tagsAdd.userErrors
       });
     }
+
+    const createGiftCardQueryString = `mutation giftCardCreate($input: GiftCardCreateInput!) {
+      giftCardCreate(input: $input) {
+        giftCard {
+          id
+          expiresOn
+        }
+        giftCardCode
+        userErrors {
+          message
+          field
+          code
+        }
+      }
+    }`;
+
+    const expiresOn = new Date();
+    expiresOn.setDate(expiresOn.getDate() + 30);
+    const createGiftCardVariables = {
+      "input": {
+        "initialValue": 1200.00,
+        "customerId": customerId,
+        "expiresOn": expiresOn.toISOString().split('T')[0]
+      }
+    };
+
+    const createGiftCardResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: createGiftCardQueryString, variables: createGiftCardVariables}),
+    });
+
+    if (!createGiftCardResponse.ok) {
+      const giftCardError = await createGiftCardResponse.json();
+      return res.status(500).json({message: 'There was an issue adding tag to customer in Shopify', data: giftCardError});
+    }
+
+    const createGiftCardData = await createGiftCardResponse.json();
+
+    if (createGiftCardData.data?.giftCardCreate?.userErrors?.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in tag addition',
+        data: createGiftCardData.data.giftCardCreate.userErrors
+      });
+    }
+
+    const giftCardCode = createGiftCardData.data.giftCardCreate.giftCardCode;
+
+    const body = `{
+      "data":{
+        "type":"event",
+        "attributes":{
+          "properties":{
+            "first_name":"${first_name}",
+            "last_name":"${last_name}",
+            "phone_number":"${phone}",
+            "email":"${email}",
+            "gift_card":"${giftCardCode}"
+          },
+          "metric":{
+            "data":{
+              "type":"metric",
+              "attributes":{
+                "name":"Medicaid Eligibility Approved"
+              }
+            }
+          },
+          "profile":{
+            "data":{
+              "type":"profile",
+              "attributes":{
+                "email":"${email}",
+                "phone_number":"${phone}",
+                "first_name":"${first_name}",
+                "last_name":"${last_name}"
+              }
+            }
+          }
+        }
+      }
+    }`;
+    
+    const url = 'https://a.klaviyo.com/api/events';
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/vnd.api+json',
+        revision: '2025-04-15',
+        'content-type': 'application/vnd.api+json',
+        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+      },
+      body: body
+    };
+
+    const klaviyoResponse = await fetch(url, options);
+
+    if (!klaviyoResponse.ok) {
+      const klaviyoError = await klaviyoResponse.json();
+      return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
+    }
   } catch (error) {
     res.json({message: 'There was an issue processing the request', data: error});
   }
@@ -1032,7 +1082,6 @@ app.post('/medicaid-checkout', async (req, res) => {
       cartLines
     });
     
-    const numericOrderId = order.id.split('/').pop();
     const orderNumber = order.name;
     
     res.json({ 
@@ -1086,9 +1135,7 @@ async function createMedicaidOrder(data) {
       financialStatus: "PENDING", // Always PENDING since we're waiting for Medicaid payment
       note: `Medicaid Split Payment - Customer: $${customerAmount.toFixed(2)}, Medicaid: $${medicaidAmount.toFixed(2)}${customerAmount === 0 ? ' (Fully Medicaid Covered)' : ''}`,
       tags: [
-        "Medicaid Split Payment",
-        customerAmount === 0 ? "Fully Medicaid Covered" : "Partial Medicaid Coverage",
-        "Pending Medicaid Payment"
+        "Medicaid"
       ]
     }
   };
