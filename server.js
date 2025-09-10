@@ -918,6 +918,8 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       });
     }
 
+    const giftCardCode = createGiftCardData.data.data.giftCardCreate.giftCardCode;
+
     const body = `{
       "data":{
         "type":"event",
@@ -927,7 +929,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
             "last_name":"${last_name}",
             "phone_number":"${phone}",
             "email":"${email}",
-            "gift_card":"${createGiftCardData}"
+            "gift_card":"${giftCardCode}"
           },
           "metric":{
             "data":{
