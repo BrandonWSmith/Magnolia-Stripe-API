@@ -906,14 +906,14 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     if (!createGiftCardResponse.ok) {
       const giftCardError = await createGiftCardResponse.json();
-      return res.status(500).json({message: 'There was an issue adding tag to customer in Shopify', data: giftCardError});
+      return res.status(500).json({message: 'There was an issue creating a gift card in Shopify', data: giftCardError});
     }
 
     const createGiftCardData = await createGiftCardResponse.json();
 
     if (createGiftCardData.data?.giftCardCreate?.userErrors?.length > 0) {
       return res.status(500).json({
-        message: 'GraphQL errors in tag addition',
+        message: 'GraphQL errors in gift card creation',
         data: createGiftCardData.data.giftCardCreate.userErrors
       });
     }
