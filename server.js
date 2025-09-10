@@ -846,7 +846,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     const addCustomerTagVariables = {
       'id': customerId,
-      'tags': ['Medicaid Eligible']
+      'tags': ['Medicaid Eligible', 'Medicaid Awaiting Payment']
     };
 
     const addCustomerTagResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
