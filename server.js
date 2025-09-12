@@ -1070,26 +1070,26 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       body: JSON.stringify({queryString: queryString, variables: variables}),
     });
 
-    res.json({data: response.json()});
-
-    if (!response.ok) {
-      const error = await response.json();
-      return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data: error});
-    }
-
     const data = await response.json();
 
+    if (!response.ok) {
+      console.error('Shopify API error:', data);
+      return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data});
+    }
+
     if (data.data?.tagsAdd?.userErrors?.length > 0) {
+      console.error('GraphQL userErrors:', data.data.tagsAdd.userErrors);
       return res.status(500).json({
         message: 'GraphQL errors in tag addition',
         data: data.data.tagsAdd.userErrors
       });
     }
-  } catch (error) {
-    return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data: error});
-  }
 
-  res.json({message: 'Tags added successfully'});
+    res.json({message: 'Tags added successfully', data});
+  } catch (error) {
+    console.error('Server error:', error);
+    return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data: error.message});
+  }
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
