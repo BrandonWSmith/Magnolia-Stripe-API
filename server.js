@@ -1070,7 +1070,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       body: JSON.stringify({queryString: queryString, variables: variables}),
     });
 
-    res.json({data: response});
+    res.json({data: response.json()});
 
     if (!response.ok) {
       const error = await response.json();
