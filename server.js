@@ -1082,6 +1082,8 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
         data: data.data.tagsAdd.userErrors
       });
     }
+
+    res.json({message: 'Tags added successfully'});
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
