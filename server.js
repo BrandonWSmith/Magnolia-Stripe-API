@@ -1084,7 +1084,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       });
     }
   } catch (error) {
-    return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data: error});
+    return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data: error.message});
   }
 
   res.json({message: 'Tags added successfully'});
