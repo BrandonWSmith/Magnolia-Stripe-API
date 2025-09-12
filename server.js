@@ -1061,7 +1061,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       'tags': ['Medicaid', 'Awaiting Payment']
     };
 
-    const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+    const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api-test-site', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
