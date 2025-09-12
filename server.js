@@ -1070,12 +1070,12 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       body: JSON.stringify({queryString: queryString, variables: variables}),
     });
 
+    res.json({data: response});
+
     if (!response.ok) {
       const error = await response.json();
       return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data: error});
     }
-
-    res.json({data: response});
 
     const data = await response.json();
 
