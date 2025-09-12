@@ -1062,7 +1062,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       'tags': ['Medicaid', 'Awaiting Payment']
     };
 
-    const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api-test-site', {
+    const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api-test-store', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
@@ -1070,31 +1070,22 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       body: JSON.stringify({queryString: queryString, variables: variables}),
     });
 
-    const text = await response.text();
-    try {
-      const data = JSON.parse(text);
+    const data = await response.json();
 
-      if (!response.ok) {
-        console.error('Shopify API error:', data);
-        return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data});
-      }
-
-      if (data.data?.tagsAdd?.userErrors?.length > 0) {
-        console.error('GraphQL userErrors:', data.data.tagsAdd.userErrors);
-        return res.status(500).json({
-          message: 'GraphQL errors in tag addition',
-          data: data.data.tagsAdd.userErrors
-        });
-      }
-
-      res.json({message: 'Tags added successfully', data});
-    } catch (err) {
-      console.error('Non-JSON response from Shopify endpoint:', text);
-      return res.status(500).json({message: 'Non-JSON response from Shopify endpoint', data: text});
+    if (!response.ok) {
+      return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data});
     }
+
+    if (data.data?.tagsAdd?.userErrors?.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in tag addition',
+        data: data.data.tagsAdd.userErrors
+      });
+    }
+
+    res.json({message: 'Tags added successfully'});
   } catch (error) {
-    console.error('Server error:', error);
-    return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data: error.message});
+    return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data: error.message || error});
   }
 });
 
