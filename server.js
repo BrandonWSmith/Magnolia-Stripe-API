@@ -845,7 +845,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
 
     const addCustomerTagVariables = {
       'id': customerId,
-      'tags': ['Medicaid Eligible', 'Medicaid Awaiting Payment']
+      'tags': ['Medicaid Eligible']
     };
 
     const addCustomerTagResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
@@ -1042,130 +1042,46 @@ app.post('/medicaid-eligibility-declined', async (req, res) => {
   }
 });
 
-const recentMedicaidOrders = new Map(); // Store recent orders to prevent duplicates
+app.post('/add-medicaid-order-tags', async (req, res) => {
+  const { orderId } = req.body;
 
-// Update the medicaid-checkout endpoint
-app.post('/medicaid-checkout', async (req, res) => {
-  const { totalAmount, customerAmount, medicaidAmount, customerId, cartLines } = req.body;
-  
-  // Create a unique key for this request
-  const requestKey = `${customerId}-${totalAmount}-${cartLines.length}`;
-  
-  // Check if we've processed this recently (within 30 seconds)
-  if (recentMedicaidOrders.has(requestKey)) {
-    const lastProcessed = recentMedicaidOrders.get(requestKey);
-    if (Date.now() - lastProcessed < 30000) {
-      console.log('Duplicate Medicaid order request blocked');
-      return res.json({ 
-        success: true,
-        message: 'Order already processed recently',
-        duplicate: true
-      });
-    }
-  }
-  
-  // Mark this request as being processed
-  recentMedicaidOrders.set(requestKey, Date.now());
-  
-  // Clean up old entries (older than 1 minute)
-  for (const [key, timestamp] of recentMedicaidOrders.entries()) {
-    if (Date.now() - timestamp > 60000) {
-      recentMedicaidOrders.delete(key);
-    }
-  }
-  
-  try {
-    const order = await createMedicaidOrder({
-      totalAmount,
-      customerAmount,
-      medicaidAmount,
-      customerId,
-      cartLines
-    });
-    
-    const orderNumber = order.name;
-    
-    res.json({ 
-      success: true,
-      orderId: order.id,
-      orderNumber: orderNumber,
-      message: 'Medicaid order created successfully'
-    });
-  } catch (error) {
-    // Remove from cache on error so it can be retried
-    recentMedicaidOrders.delete(requestKey);
-    
-    console.error('Medicaid checkout error:', error);
-    res.status(500).json({ 
-      message: 'Unable to process Medicaid checkout. Please call (502) 653-5834 for assistance.',
-      error: error.message,
-      details: error.stack
-    });
-  }
-});
-
-// Simplified createMedicaidOrder function
-async function createMedicaidOrder(data) {
-  const { customerAmount, medicaidAmount, customerId, cartLines } = data;
-  
-  const lineItems = cartLines.map(line => ({
-    variantId: line.merchandise.id,
-    quantity: line.quantity
-  }));
-  
-  const orderQueryString = `
-    mutation orderCreate($order: OrderCreateOrderInput!) {
-      orderCreate(order: $order) {
-        order {
+  const queryString = `mutation addTags($id: ID!, $tags: [String!]!) {
+      tagsAdd(id: $id, tags: $tags) {
+        node {
           id
-          name
-          totalPrice
         }
         userErrors {
-          field
           message
         }
       }
+    }`;
+
+    const variables = {
+      'id': orderId,
+      'tags': ['Medicaid', 'Awaiting Payment']
+    };
+
+    const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: queryString, variables: variables}),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      return res.status(500).json({message: 'There was an issue adding tag to customer in Shopify', data: error});
     }
-  `;
 
-  const orderVariables = {
-    order: {
-      customerId: customerId,
-      lineItems: lineItems,
-      financialStatus: "PENDING", // Always PENDING since we're waiting for Medicaid payment
-      note: `Medicaid Split Payment - Customer: $${customerAmount.toFixed(2)}, Medicaid: $${medicaidAmount.toFixed(2)}${customerAmount === 0 ? ' (Fully Medicaid Covered)' : ''}`,
-      tags: [
-        "Medicaid"
-      ]
+    const data = await response.json();
+
+    if (data.data?.tagsAdd?.userErrors?.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in tag addition',
+        data: data.data.tagsAdd.userErrors
+      });
     }
-  };
-
-  console.log('Sending GraphQL request with variables:', JSON.stringify(orderVariables, null, 2));
-
-  const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api-test-store', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      queryString: orderQueryString,
-      variables: orderVariables
-    })
-  });
-
-  const result = await response.json();
-  console.log('Full API response:', JSON.stringify(result, null, 2));
-  
-  if (result.data?.data?.orderCreate?.userErrors?.length > 0) {
-    throw new Error(`Order creation failed: ${result.data.data.orderCreate.userErrors[0].message}`);
-  }
-
-  if (!result.data?.data?.orderCreate?.order) {
-    throw new Error('No order returned from Shopify API');
-  }
-
-  return result.data.data.orderCreate.order;
-}
+});
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
