@@ -1045,7 +1045,8 @@ app.post('/medicaid-eligibility-declined', async (req, res) => {
 app.post('/add-medicaid-order-tags', async (req, res) => {
   const { orderId } = req.body;
 
-  const queryString = `mutation addTags($id: ID!, $tags: [String!]!) {
+  try {
+    const queryString = `mutation addTags($id: ID!, $tags: [String!]!) {
       tagsAdd(id: $id, tags: $tags) {
         node {
           id
@@ -1071,7 +1072,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 
     if (!response.ok) {
       const error = await response.json();
-      return res.status(500).json({message: 'There was an issue adding tag to customer in Shopify', data: error});
+      return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data: error});
     }
 
     const data = await response.json();
@@ -1082,8 +1083,11 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
         data: data.data.tagsAdd.userErrors
       });
     }
+  } catch (error) {
+    return res.status(500).json({message: 'There was an issue adding tag to order in Shopify', data: error});
+  }
 
-    res.json({message: 'Tags added successfully'});
+  res.json({message: 'Tags added successfully'});
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
