@@ -1048,6 +1048,9 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
   const { orderId } = req.body;
 
   try {
+    // Wait 2-3 seconds for order to be fully created
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
     const queryString = `mutation addTags($id: ID!, $tags: [String!]!) {
       tagsAdd(id: $id, tags: $tags) {
         node {
@@ -1074,48 +1077,27 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 
     const data = await response.json();
 
-    // Debug logging - send everything to client
     if (!response.ok) {
       return res.status(500).json({
         message: 'There was an issue adding tag to order in Shopify', 
-        debug: {
-          orderId: orderId,
-          responseStatus: response.status,
-          responseStatusText: response.statusText,
-          fullResponse: data
-        }
+        data: data
       });
     }
 
-    // Check for userErrors - but the path might be different
     const userErrors = data.data?.data?.tagsAdd?.userErrors || data.data?.tagsAdd?.userErrors;
     
     if (userErrors && userErrors.length > 0) {
       return res.status(500).json({
         message: 'GraphQL errors in tag addition',
-        debug: {
-          orderId: orderId,
-          userErrors: userErrors,
-          fullResponse: data
-        }
+        data: userErrors
       });
     }
 
-    // Send full response for debugging even on success
-    res.json({
-      message: 'Tags added successfully',
-      debug: {
-        orderId: orderId,
-        fullResponse: data
-      }
-    });
+    res.json({message: 'Tags added successfully'});
   } catch (error) {
     return res.status(500).json({
       message: 'There was an issue adding tag to order in Shopify', 
-      debug: {
-        orderId: orderId,
-        error: error.message || error
-      }
+      error: error.message || error
     });
   }
 });
