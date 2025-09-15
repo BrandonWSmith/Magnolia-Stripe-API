@@ -1074,11 +1074,10 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 
     const data = await response.json();
 
-    // Send the full response to client for debugging
     if (!response.ok) {
       return res.status(500).json({
         message: 'There was an issue adding tag to order in Shopify', 
-        fullResponse: data,
+        data: data,
         responseStatus: response.status
       });
     }
@@ -1086,11 +1085,10 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
     if (data.data?.tagsAdd?.userErrors?.length > 0) {
       return res.status(500).json({
         message: 'GraphQL errors in tag addition',
-        userErrors: data.data.tagsAdd.userErrors
+        error: data.data.tagsAdd.userErrors
       });
     }
 
-    // Send full successful response for debugging
     res.json({
       message: 'Tags added successfully'
     });
