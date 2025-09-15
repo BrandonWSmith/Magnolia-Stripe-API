@@ -1049,7 +1049,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 
   try {
     const getCustomerQueryString = `query {
-      customer(id: "gid://shopify/Customer/${customerId}") {
+      customer(id: ${customerId}) {
         tags
       }
     }`;
