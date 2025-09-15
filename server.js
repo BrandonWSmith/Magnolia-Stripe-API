@@ -1045,55 +1045,92 @@ app.post('/medicaid-eligibility-declined', async (req, res) => {
 });
 
 app.post('/add-medicaid-order-tags', async (req, res) => {
-  const { orderId } = req.body;
+  const { orderId, customerId } = req.body;
 
   try {
-    // Wait 2-3 seconds for order to be fully created
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    const queryString = `mutation addTags($id: ID!, $tags: [String!]!) {
-      tagsAdd(id: $id, tags: $tags) {
-        node {
-          id
-        }
-        userErrors {
-          message
-        }
+    const getCustomerQueryString = `query {
+      customer(id: "gid://shopify/Customer/${customerId}") {
+        tags
       }
     }`;
 
-    const variables = {
-      'id': orderId,
-      'tags': ['Medicaid', 'Awaiting Payment']
-    };
-
-    const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api-test-store', {
+    const getCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({queryString: queryString, variables: variables}),
+      body: JSON.stringify({queryString: getCustomerQueryString}),
     });
 
-    const data = await response.json();
+    const getCustomerData = await getCustomerResponse.json();
 
-    if (!response.ok) {
+    if (!getCustomerResponse.ok) {
       return res.status(500).json({
-        message: 'There was an issue adding tag to order in Shopify', 
-        data: data
+        message: 'There was an issue retrieving customer tags from Shopify', 
+        data: getCustomerData
       });
     }
 
-    const userErrors = data.data?.data?.tagsAdd?.userErrors || data.data?.tagsAdd?.userErrors;
+    const getCustomerUserErrors = addTagsData.data?.data?.tagsAdd?.userErrors || addTagsData.data?.tagsAdd?.userErrors;
     
-    if (userErrors && userErrors.length > 0) {
+    if (getCustomerUserErrors && getCustomerUserErrors.length > 0) {
       return res.status(500).json({
         message: 'GraphQL errors in tag addition',
-        data: userErrors
+        data: getCustomerUserErrors
       });
     }
 
-    res.json({message: 'Tags added successfully'});
+    const customerTags = getCustomerData.data?.data?.customer?.tags || [];
+
+    if (customerTags.includes('Medicaid Eligible')) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      const addTagsQueryString = `mutation addTags($id: ID!, $tags: [String!]!) {
+        tagsAdd(id: $id, tags: $tags) {
+          node {
+            id
+          }
+          userErrors {
+            message
+          }
+        }
+      }`;
+
+      const addTagsVariables = {
+        'id': orderId,
+        'tags': ['Medicaid', 'Awaiting Payment']
+      };
+
+      const addTagsResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api-test-store', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: addTagsQueryString, variables: addTagsVariables}),
+      });
+
+      const addTagsData = await addTagsResponse.json();
+
+      if (!addTagsResponse.ok) {
+        return res.status(500).json({
+          message: 'There was an issue adding tag to order in Shopify', 
+          data: addTagsData
+        });
+      }
+
+      const addTagsUserErrors = addTagsData.data?.data?.tagsAdd?.userErrors || addTagsData.data?.tagsAdd?.userErrors;
+      
+      if (addTagsUserErrors && addTagsUserErrors.length > 0) {
+        return res.status(500).json({
+          message: 'GraphQL errors in tag addition',
+          data: addTagsUserErrors
+        });
+      }
+
+      res.json({message: 'Tags added successfully'});
+    }
+
+    res.json({message: 'Customer is not Medicaid Eligible, no tags added to order'});
   } catch (error) {
     return res.status(500).json({
       message: 'There was an issue adding tag to order in Shopify', 
