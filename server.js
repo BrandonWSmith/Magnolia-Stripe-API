@@ -1049,7 +1049,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 
   try {
     const getCustomerQueryString = `query {
-      customer(id: ${customerId}) {
+      customer(id: "${customerId}") {
         tags
       }
     }`;
