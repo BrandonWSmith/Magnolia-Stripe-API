@@ -1054,7 +1054,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       }
     }`;
 
-    const getCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api-test-store', {
+    const getCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
@@ -1101,7 +1101,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
         'tags': ['Medicaid', 'Awaiting Payment']
       };
 
-      const addTagsResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api-test-store', {
+      const addTagsResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
