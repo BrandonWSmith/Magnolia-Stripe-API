@@ -1129,7 +1129,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 
       res.json({message: 'Tags added successfully'});
     } else {
-      res.json({message: 'Customer is not Medicaid Eligible, no tags added to order', data: getCustomerData});
+      res.json({message: 'Customer is not Medicaid Eligible, no tags added to order'});
     }
   } catch (error) {
     return res.status(500).json({
