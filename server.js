@@ -1071,11 +1071,11 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       });
     }
 
-    const getCustomerUserErrors = addTagsData.data?.data?.tagsAdd?.userErrors || addTagsData.data?.tagsAdd?.userErrors;
+    const getCustomerUserErrors = getCustomerData.data?.data?.tagsAdd?.userErrors || getCustomerData.data?.tagsAdd?.userErrors;
     
     if (getCustomerUserErrors && getCustomerUserErrors.length > 0) {
       return res.status(500).json({
-        message: 'GraphQL errors in tag addition',
+        message: 'GraphQL errors in retrieving customer',
         data: getCustomerUserErrors
       });
     }
