@@ -1049,7 +1049,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 
   try {
     const getCustomerQueryString = `query {
-      customer(id: ${customerId}) {
+      customer(id: "${customerId}") {
         tags
       }
     }`;
@@ -1128,9 +1128,9 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       }
 
       res.json({message: 'Tags added successfully'});
+    } else {
+      res.json({message: 'Customer is not Medicaid Eligible, no tags added to order', data: getCustomerData});
     }
-
-    res.json({message: 'Customer is not Medicaid Eligible, no tags added to order', data: getCustomerData});
   } catch (error) {
     return res.status(500).json({
       message: 'There was an issue adding tag to order in Shopify', 
