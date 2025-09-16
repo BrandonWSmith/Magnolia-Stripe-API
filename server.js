@@ -719,21 +719,7 @@ app.post('/mediciad-eligibility-request', async (req, res) => {
       "data":{
         "type":"event",
         "attributes":{
-          "properties":{
-            "loved_one": {
-              "first_name":"${form_data.loved_one.first_name}",
-              "last_name":"${form_data.loved_one.last_name}",
-              "dob":"${form_data.loved_one.dob}",
-              "ssn":"${form_data.loved_one.ssn}"
-            },
-            "contact": {
-              "first_name":"${form_data.contact.first_name}",
-              "last_name":"${form_data.contact.last_name}",
-              "email":"${form_data.contact.email}",
-              "phone_number":"${form_data.contact.phone}",
-              "urgnecy":"${form_data.contact.urgency}"
-            },
-          },
+          "properties":${JSON.stringify(form_data)},
           "metric":{
             "data":{
               "type":"metric",
