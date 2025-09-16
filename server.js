@@ -753,7 +753,57 @@ app.post('/mediciad-eligibility-request', async (req, res) => {
   const { form_data } = req.body;
 
   try {
-    const body = `{
+    const updateConsentBody =`{
+      "data": {
+        "type": "profile-subscription-bulk-create-job",
+        "attributes": {
+          "profiles": {
+            "data": [
+              {
+                "type": "profile",
+                "attributes": {
+                  "email":"${form_data.contact.email}",
+                  "phone_number":"${form_data.contact.phone}",
+                  "subscriptions": {
+                    "email": {
+                      "marketing": {
+                        "consent": "SUBSCRIBED"
+                      }
+                    },
+                    "sms": {
+                      "marketing": {
+                        "consent": "SUBSCRIBED"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }`;
+
+    const updateConsentUrl = 'https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs';
+    const updateConsentOptions = {
+      method: 'POST',
+      headers: {
+        accept: 'application/vnd.api+json',
+        revision: '2025-04-15',
+        'content-type': 'application/vnd.api+json',
+        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+      },
+      body: updateConsentBody
+    };
+
+    const updateConsentResponse = await fetch(updateConsentUrl, updateConsentOptions);
+
+    if (!updateConsentResponse.ok) {
+      const updateConsentError = await updateConsentResponse.json();
+      return res.status(500).json({message: 'There was an issue updating consent in Klaviyo', data: updateConsentError});
+    }
+
+    const eventBody = `{
       "data":{
         "type":"event",
         "attributes":{
@@ -781,8 +831,8 @@ app.post('/mediciad-eligibility-request', async (req, res) => {
       }
     }`;
     
-    const url = 'https://a.klaviyo.com/api/events';
-    const options = {
+    const eventUrl = 'https://a.klaviyo.com/api/events';
+    const eventOptions = {
       method: 'POST',
       headers: {
         accept: 'application/vnd.api+json',
@@ -790,14 +840,14 @@ app.post('/mediciad-eligibility-request', async (req, res) => {
         'content-type': 'application/vnd.api+json',
         Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
       },
-      body: body
+      body: eventBody
     };
 
-    const klaviyoResponse = await fetch(url, options);
+    const eventResponse = await fetch(eventUrl, eventOptions);
 
-    if (!klaviyoResponse.ok) {
-      const klaviyoError = await klaviyoResponse.json();
-      return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
+    if (!eventResponse.ok) {
+      const eventError = await eventResponse.json();
+      return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: eventError});
     }
 
     res.json({message: 'Event sent to Klaviyo successfully'});
