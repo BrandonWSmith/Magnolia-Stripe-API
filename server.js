@@ -783,6 +783,14 @@ app.post('/mediciad-eligibility-request', async (req, res) => {
               }
             ]
           }
+        },
+        "relationships": {
+          "list": {
+            "data": {
+              "type": "list",
+              "id": "VPDQdQ"
+            }
+          }
         }
       }
     }`;
