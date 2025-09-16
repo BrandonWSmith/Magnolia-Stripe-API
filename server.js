@@ -70,6 +70,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
 
 app.post('/klaviyo-calculator-contact', async (req, res) => {
   const { formData } = req.body;
+
   const body = `{
     "data":{
       "type":"event",
@@ -637,6 +638,7 @@ app.post('/get-payment-intent', async (req, res) => {
 
 app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
   let event = req.body;
+  const paymentIntent = event.data.object;
 
   if (webhookSecret) {
     const signature = req.headers['stripe-signature'];
@@ -649,8 +651,6 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
   }
 
   if (event.type === 'payment_intent.succeeded') {
-    const paymentIntent = event.data.object;
-
     const queryString = `mutation orderMarkAsPaid($input: OrderMarkAsPaidInput!) {
       orderMarkAsPaid(input: $input) {
         userErrors {
@@ -680,8 +680,46 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
     .then(response => response.json())
     .then(data => res.json({data: data, paymentIntent: paymentIntent, id: paymentIntent.metadata.orderId}));
   } else if (event.type === 'payment_intent.payment_failed') {
-    const paymentIntent = event.data.object;
-    console.log(`PaymentIntent failed! ID: ${paymentIntent.id}`);
+    const body = `{
+      "data":{
+        "type":"event",
+        "attributes":{
+          "properties":${JSON.stringify(paymentIntent)},
+          "metric":{
+            "data":{
+              "type":"metric",
+              "attributes":{
+                "name":"Stripe Payment Failed"
+              }
+            }
+          },
+          "profile":{
+            "data":{
+              "type":"profile",
+              "attributes":{
+                "email":"hello@magnoliacremations.com"
+              }
+            }
+          }
+        }
+      }
+    }`;
+
+    const url = 'https://a.klaviyo.com/api/events';
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/vnd.api+json',
+        revision: '2025-04-15',
+        'content-type': 'application/vnd.api+json',
+        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+      },
+      body: body
+    };
+
+    fetch(url, options)
+      .then(response => response.status === 202 ? res.status(202).send() : res.json({response: response}))
+      .catch(err => res.json({error: err}));
   } else {
     res.send();
   }
