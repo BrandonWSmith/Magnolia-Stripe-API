@@ -763,7 +763,7 @@ app.post('/mediciad-eligibility-request', async (req, res) => {
                 "type": "profile",
                 "attributes": {
                   "email":"${form_data.contact.email}",
-                  "phone_number":"${form_data.contact.phone}",
+                  "phone_number":"+1${form_data.contact.phone.replaceAll("-", "")}",
                   "subscriptions": {
                     "email": {
                       "marketing": {
