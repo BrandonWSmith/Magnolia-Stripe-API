@@ -56,7 +56,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
     method: 'POST',
     headers: {
       accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
+      revision: '2025-07-15',
       'content-type': 'application/vnd.api+json',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     },
@@ -101,7 +101,7 @@ app.post('/klaviyo-calculator-contact', async (req, res) => {
     method: 'POST',
     headers: {
       accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
+      revision: '2025-07-15',
       'content-type': 'application/vnd.api+json',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     },
@@ -145,7 +145,7 @@ app.post('/klaviyo-calculator-email', async (req, res) => {
     method: 'POST',
     headers: {
       accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
+      revision: '2025-07-15',
       'content-type': 'application/vnd.api+json',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     },
@@ -209,7 +209,7 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
     method: 'POST',
     headers: {
       accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
+      revision: '2025-07-15',
       'content-type': 'application/vnd.api+json',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     },
@@ -293,7 +293,7 @@ app.post('/opt-in', async (req, res) => {
     method: 'GET',
     headers: {
       accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
+      revision: '2025-07-15',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     }
   };
@@ -307,7 +307,7 @@ app.post('/opt-in', async (req, res) => {
           method: 'POST',
           headers: {
             accept: 'application/vnd.api+json',
-            revision: '2025-04-15',
+            revision: '2025-07-15',
             'content-type': 'application/vnd.api+json',
             Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
           },
@@ -354,7 +354,7 @@ app.post('/opt-in', async (req, res) => {
               method: 'POST',
               headers: {
                 accept: 'application/vnd.api+json',
-                revision: '2025-04-15',
+                revision: '2025-07-15',
                 'content-type': 'application/vnd.api+json',
                 Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
               },
@@ -710,7 +710,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       method: 'POST',
       headers: {
         accept: 'application/vnd.api+json',
-        revision: '2025-04-15',
+        revision: '2025-07-15',
         'content-type': 'application/vnd.api+json',
         Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
       },
@@ -773,6 +773,9 @@ app.post('/mediciad-eligibility-request', async (req, res) => {
                     "sms": {
                       "marketing": {
                         "consent": "SUBSCRIBED"
+                      },
+                      "transactional": {
+                        "consent": "SUBSCRIBED"
                       }
                     }
                   }
@@ -789,7 +792,7 @@ app.post('/mediciad-eligibility-request', async (req, res) => {
       method: 'POST',
       headers: {
         accept: 'application/vnd.api+json',
-        revision: '2025-04-15',
+        revision: '2025-07-15',
         'content-type': 'application/vnd.api+json',
         Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
       },
@@ -836,7 +839,7 @@ app.post('/mediciad-eligibility-request', async (req, res) => {
       method: 'POST',
       headers: {
         accept: 'application/vnd.api+json',
-        revision: '2025-04-15',
+        revision: '2025-07-15',
         'content-type': 'application/vnd.api+json',
         Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
       },
@@ -1106,7 +1109,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       method: 'POST',
       headers: {
         accept: 'application/vnd.api+json',
-        revision: '2025-04-15',
+        revision: '2025-07-15',
         'content-type': 'application/vnd.api+json',
         Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
       },
@@ -1169,7 +1172,7 @@ app.post('/medicaid-eligibility-declined', async (req, res) => {
       method: 'POST',
       headers: {
         accept: 'application/vnd.api+json',
-        revision: '2025-04-15',
+        revision: '2025-07-15',
         'content-type': 'application/vnd.api+json',
         Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
       },
