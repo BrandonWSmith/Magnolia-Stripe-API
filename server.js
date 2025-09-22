@@ -1268,7 +1268,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 
       const addTagsVariables = {
         'id': orderId,
-        'tags': ['Medicaid', 'Awaiting Payment']
+        'tags': ['Medicaid', '‼️Awaiting Payment‼️']
       };
 
       const addTagsResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
