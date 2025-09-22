@@ -646,7 +646,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
     } catch (err) {
       console.error(`Webhook signature verification failed: ${err.message}`);
-      return res.sendStatus(400);
+      return res.status(400).json({error: 'Webhook signature verification failed'});
     }
   }
 
@@ -669,35 +669,39 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       }
     };
 
-    await fetch('https://magnolia-api.onrender.com/shopify-admin-api', 
-    {
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({queryString: queryString, variables: variables}),
-    })
-    .then(response => response.json())
-    .then(data => res.json({data: data, paymentIntent: paymentIntent, id: paymentIntent.metadata.orderId}));
+    try {
+      const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: queryString, variables: variables}),
+      });
+
+      const data = await response.json();
+      res.json({data: data, paymentIntent: paymentIntent, id: paymentIntent.metadata.orderId});
+    } catch (error) {
+      return res.status(500).json({error: error.message || error});
+    }
   } else if (event.type === 'payment_intent.payment_failed') {
     const body = `{
-      "data":{
-        "type":"event",
-        "attributes":{
-          "properties":${JSON.stringify(paymentIntent)},
-          "metric":{
-            "data":{
-              "type":"metric",
-              "attributes":{
-                "name":"Stripe Payment Failed"
+      "data": {
+        "type": "event",
+        "attributes": {
+          "properties": ${JSON.stringify(paymentIntent)},
+          "metric": {
+            "data": {
+              "type": "metric",
+              "attributes": {
+                "name": "Stripe Payment Failed"
               }
             }
           },
-          "profile":{
-            "data":{
-              "type":"profile",
-              "attributes":{
-                "email":"hello@magnoliacremations.com"
+          "profile": {
+            "data": {
+              "type": "profile",
+              "attributes": {
+                "email": "hello@magnoliacremations.com"
               }
             }
           }
@@ -717,11 +721,19 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       body: body
     };
 
-    fetch(url, options)
-      .then(response => response.status === 202 ? res.status(202).send() : res.json({response: response}))
-      .catch(err => res.json({error: err}));
+    try {
+      const response = await fetch(url, options);
+      if (response.status === 202) {
+        return res.status(202).json({message: 'Payment failed event processed'});
+      } else {
+        const errorResponse = await response.json();
+        return res.status(500).json({error: 'Error processing payment failed event', details: errorResponse});
+      }
+    } catch (error) {
+      return res.status(500).json({error: error.message || error});
+    }
   } else {
-    res.json({message: 'Event type not handled' });
+    return res.status(200).json({message: 'Event received, no action required'});
   }
 });
 
