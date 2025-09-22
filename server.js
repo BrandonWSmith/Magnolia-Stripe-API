@@ -637,18 +637,20 @@ app.post('/get-payment-intent', async (req, res) => {
 });
 
 app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
-  let event = req.body;
-  const paymentIntent = event.data.object;
+  let event;
+  try {
+    event = req.body;
 
-  if (webhookSecret) {
-    const signature = req.headers['stripe-signature'];
-    try {
+    if (webhookSecret) {
+      const signature = req.headers['stripe-signature'];
       event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
-    } catch (err) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
-      return res.status(400).json({error: 'Webhook signature verification failed'});
     }
+  } catch (err) {
+    console.error(`Webhook signature verification failed: ${err.message}`);
+    return res.status(400).json({error: 'Webhook signature verification failed', details: err.message});
   }
+
+  const paymentIntent = event.data.object;
 
   if (event.type === 'payment_intent.succeeded') {
     const queryString = `mutation orderMarkAsPaid($input: OrderMarkAsPaidInput!) {
@@ -681,7 +683,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       const data = await response.json();
       res.json({data: data, paymentIntent: paymentIntent, id: paymentIntent.metadata.orderId});
     } catch (error) {
-      return res.status(500).json({error: error.message || error});
+      return res.status(500).json({error: 'Error processing payment intent succeeded', details: error.message});
     }
   } else if (event.type === 'payment_intent.payment_failed') {
     const body = `{
@@ -730,10 +732,10 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
         return res.status(500).json({error: 'Error processing payment failed event', details: errorResponse});
       }
     } catch (error) {
-      return res.status(500).json({error: error.message || error});
+      return res.status(500).json({error: 'Error processing payment failed event', details: error.message});
     }
   } else {
-    return res.status(200).json({message: 'Event received, no action required'});
+    return res.status(200).json({message: 'Event received, no action required', eventType: event.type});
   }
 });
 
