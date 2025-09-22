@@ -721,7 +721,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
       .then(response => response.status === 202 ? res.status(202).send() : res.json({response: response}))
       .catch(err => res.json({error: err}));
   } else {
-    res.send();
+    res.json({message: 'Event type not handled' });
   }
 });
 
