@@ -9,9 +9,11 @@ const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY);
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-const {createClient} = require('@supabase/supabase-js');
-const supabase = createClient('https://tsmktlhxxztqljdwbdlj.supabase.co', process.env.SUPABASE_KEY);
 
+app.use(cors({
+  origin: '*',
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use((req, res, next) => {
   if (req.originalUrl === '/webhook') {
     next();
@@ -20,10 +22,6 @@ app.use((req, res, next) => {
   }
 });
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  origin: '*',
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
 
 app.post('/klaviyo-calculator-used', async (req, res) => {
   const { formData } = req.body;
@@ -57,7 +55,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
     method: 'POST',
     headers: {
       accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
+      revision: '2025-07-15',
       'content-type': 'application/vnd.api+json',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     },
@@ -71,6 +69,7 @@ app.post('/klaviyo-calculator-used', async (req, res) => {
 
 app.post('/klaviyo-calculator-contact', async (req, res) => {
   const { formData } = req.body;
+
   const body = `{
     "data":{
       "type":"event",
@@ -101,7 +100,7 @@ app.post('/klaviyo-calculator-contact', async (req, res) => {
     method: 'POST',
     headers: {
       accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
+      revision: '2025-07-15',
       'content-type': 'application/vnd.api+json',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     },
@@ -145,7 +144,7 @@ app.post('/klaviyo-calculator-email', async (req, res) => {
     method: 'POST',
     headers: {
       accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
+      revision: '2025-07-15',
       'content-type': 'application/vnd.api+json',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     },
@@ -209,7 +208,7 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
     method: 'POST',
     headers: {
       accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
+      revision: '2025-07-15',
       'content-type': 'application/vnd.api+json',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     },
@@ -253,6 +252,38 @@ app.post('/shopify-admin-api', async (req, res) => {
   }
 });
 
+app.post('/shopify-admin-api-test-store', async (req, res) => {
+  const { queryString, variables } = req.body;
+  const shopify = shopifyApi({
+    apiVersion: LATEST_API_VERSION,
+    apiKey: 'c5bd34b79f76095c6340ad5b65b62f4d',
+    apiSecretKey: '41319fc85705ae5aa3b3221fc19a31f1',
+    scopes: ['write_orders', 'write_customers'],
+    hostName: 'https://impact-ma-andorra-wrapped.trycloudflare.com',
+    isEmbeddedApp: true,
+    isCustomStoreApp: true,
+    adminApiAccessToken: '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',
+  });
+  const sessionId = shopify.session.getOfflineId('brandon-smiths-test-store.myshopify.com');
+  const session = new Session({
+    id: sessionId,
+    shop: 'brandon-smiths-test-store.myshopify.com',
+    state: 'state',
+    isOnline: false,
+  });
+  const client = new shopify.clients.Graphql({ session: session });
+  try {
+    const data = await client.request(queryString, {
+      variables: variables,
+    });
+
+    res.json({data: data});
+  } catch (e) {
+    console.log(e.response.body);
+    res.status(400).json({data: e});
+  }
+});
+
 app.post('/opt-in', async (req, res) => {
   const { formData } = req.body;
   
@@ -261,7 +292,7 @@ app.post('/opt-in', async (req, res) => {
     method: 'GET',
     headers: {
       accept: 'application/vnd.api+json',
-      revision: '2025-04-15',
+      revision: '2025-07-15',
       Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
     }
   };
@@ -275,7 +306,7 @@ app.post('/opt-in', async (req, res) => {
           method: 'POST',
           headers: {
             accept: 'application/vnd.api+json',
-            revision: '2025-04-15',
+            revision: '2025-07-15',
             'content-type': 'application/vnd.api+json',
             Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
           },
@@ -322,7 +353,7 @@ app.post('/opt-in', async (req, res) => {
               method: 'POST',
               headers: {
                 accept: 'application/vnd.api+json',
-                revision: '2025-04-15',
+                revision: '2025-07-15',
                 'content-type': 'application/vnd.api+json',
                 Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
               },
@@ -355,7 +386,7 @@ app.post('/create-payment-intent', async (req, res) => {
     metadata: formData,
   });
 
-  res.json({client_secret: paymentIntent.client_secret, id: paymentIntent.id});
+    res.json({client_secret: paymentIntent.client_secret, id: paymentIntent.id});
 });
 
 app.post('/update-payment-intent', async (req, res) => {
@@ -605,21 +636,22 @@ app.post('/get-payment-intent', async (req, res) => {
 });
 
 app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
-  let event = req.body;
+  let event;
+  try {
+    event = req.body;
 
-  if (webhookSecret) {
-    const signature = req.headers['stripe-signature'];
-    try {
+    if (webhookSecret) {
+      const signature = req.headers['stripe-signature'];
       event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
-    } catch (err) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
-      return res.sendStatus(400);
     }
+  } catch (err) {
+    console.error(`Webhook signature verification failed: ${err.message}`);
+    return res.status(400).json({error: 'Webhook signature verification failed', details: err.message});
   }
 
-  if (event.type === 'payment_intent.succeeded') {
-    const paymentIntent = event.data.object;
+  const paymentIntent = event.data.object;
 
+  if (event.type === 'payment_intent.succeeded') {
     const queryString = `mutation orderMarkAsPaid($input: OrderMarkAsPaidInput!) {
       orderMarkAsPaid(input: $input) {
         userErrors {
@@ -634,25 +666,76 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 
     const variables = {
       'input': {
-        'id': paymentIntent.metadata.order_id,
+        'id': paymentIntent.metadata.orderId,
       }
     };
 
-    await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', 
-    {
+    try {
+      const response = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: queryString, variables: variables}),
+      });
+
+      const data = await response.json();
+      res.json({data: data, paymentIntent: paymentIntent, id: paymentIntent.metadata.orderId});
+    } catch (error) {
+      return res.status(500).json({error: 'Error processing payment intent succeeded', details: error.message});
+    }
+  } else if (event.type === 'payment_intent.payment_failed') {
+    const body = `{
+      "data": {
+        "type": "event",
+        "attributes": {
+          "properties": ${JSON.stringify(paymentIntent)},
+          "metric": {
+            "data": {
+              "type": "metric",
+              "attributes": {
+                "name": "Stripe Payment Failed"
+              }
+            }
+          },
+          "profile": {
+            "data": {
+              "type": "profile",
+              "attributes": {
+                "email": "hello@magnoliacremations.com"
+              }
+            }
+          }
+        }
+      }
+    }`;
+
+    const url = 'https://a.klaviyo.com/api/events';
+    const options = {
       method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        accept: 'application/vnd.api+json',
+        revision: '2025-07-15',
+        'content-type': 'application/vnd.api+json',
+        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
       },
-      body: JSON.stringify({queryString: queryString, variables: variables}),
-    })
-    .then(response => response.status === 200 ? res.send() : console.log(response));
-  } else if (event.type === 'payment_intent.payment_failed') {
-    const paymentIntent = event.data.object;
-    console.log(`PaymentIntent failed! ID: ${paymentIntent.id}`);
-  }
+      body: body
+    };
 
-  res.send();
+    try {
+      const response = await fetch(url, options);
+      if (response.status === 202) {
+        return res.status(202).json({message: 'Payment failed event processed'});
+      } else {
+        const errorResponse = await response.json();
+        return res.status(500).json({error: 'Error processing payment failed event', details: errorResponse});
+      }
+    } catch (error) {
+      return res.status(500).json({error: 'Error processing payment failed event', details: error.message});
+    }
+  } else {
+    return res.status(200).json({message: 'Event received, no action required', eventType: event.type});
+  }
 });
 
 let ip;
@@ -679,145 +762,549 @@ app.get('/get-form-data', (req, res) => {
   }
 });
 
-app.post('/generate-discount-code', async (req, res) => {
-  const { first_name, last_name, email } = req.body;
-  let discountCode = '';
-  async function generateUniqueDiscountCode() {
-    for (let i = 0; i <= 9; i++) {
-      discountCode += Math.floor(Math.random() * 9).toString();
-    }
+app.post('/mediciad-eligibility-request', async (req, res) => {
+  const { form_data } = req.body;
 
-    const checkCodeExistsQueryString = `query codeDiscountNodeByCode($code: String!) {
-      codeDiscountNodeByCode(code: $code) {
-        codeDiscount {
-          __typename
-          ... on DiscountCodeBasic {
-            codesCount {
-              count
-            }
-            shortSummary
-          }
-        }
-        id
-      }
-    }`;
-
-    const checkCodeExistsVariables = {
-      'code': `MCMD${discountCode}`
-    };
-
-    try {
-      /*const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({queryString: checkCodeExistsQueryString, variables: checkCodeExistsVariables}),
-      });
-
-      const data = await response.json();
-      const discountCodeExists = data.data.data.codeDiscountNodeByCode !== null && data.data.data.codeDiscountNodeByCode !== undefined;
-
-      if (discountCodeExists) {
-        return await generateUniqueDiscountCode();
-      }
-
-      const createDiscountCodeQueryString = `mutation CreateDiscountCode($basicCodeDiscount: DiscountCodeBasicInput!) {
-        discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
-          codeDiscountNode {
-            id codeDiscount {
-              ... on DiscountCodeBasic {
-                title
-                startsAt
-                endsAt
-                customerGets {
-                  value {
-                    ... on DiscountAmount {
-                      amount {
-                        amount
+  try {
+    const updateConsentBody =`{
+      "data": {
+        "type": "profile-subscription-bulk-create-job",
+        "attributes": {
+          "profiles": {
+            "data": [
+              {
+                "type": "profile",
+                "attributes": {
+                  "email":"${form_data.contact.email}",
+                  "phone_number":"+1${form_data.contact.phone.replaceAll("-", "")}",
+                  "subscriptions": {
+                    "email": {
+                      "marketing": {
+                        "consent": "SUBSCRIBED"
                       }
-                    } 
+                    },
+                    "sms": {
+                      "marketing": {
+                        "consent": "SUBSCRIBED"
+                      },
+                      "transactional": {
+                        "consent": "SUBSCRIBED"
+                      }
+                    }
                   }
                 }
               }
+            ]
+          }
+        },
+        "relationships": {
+          "list": {
+            "data": {
+              "type": "list",
+              "id": "VPDQdQ"
             }
           }
+        }
+      }
+    }`;
+
+    const updateConsentUrl = 'https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs';
+    const updateConsentOptions = {
+      method: 'POST',
+      headers: {
+        accept: 'application/vnd.api+json',
+        revision: '2025-07-15',
+        'content-type': 'application/vnd.api+json',
+        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+      },
+      body: updateConsentBody
+    };
+
+    const updateConsentResponse = await fetch(updateConsentUrl, updateConsentOptions);
+
+    if (!updateConsentResponse.ok) {
+      const updateConsentError = await updateConsentResponse.json();
+      return res.status(500).json({message: 'There was an issue updating consent in Klaviyo', data: updateConsentError});
+    }
+
+    const eventBody = `{
+      "data":{
+        "type":"event",
+        "attributes":{
+          "properties":${JSON.stringify(form_data)},
+          "metric":{
+            "data":{
+              "type":"metric",
+              "attributes":{
+                "name":"Medicaid Eligibility Verification Requested"
+              }
+            }
+          },
+          "profile":{
+            "data":{
+              "type":"profile",
+              "attributes":{
+                "email":"${form_data.contact.email}",
+                "phone_number":"${form_data.contact.phone}",
+                "first_name":"${form_data.contact.first_name}",
+                "last_name":"${form_data.contact.last_name}"
+              }
+            }
+          }
+        }
+      }
+    }`;
+    
+    const eventUrl = 'https://a.klaviyo.com/api/events';
+    const eventOptions = {
+      method: 'POST',
+      headers: {
+        accept: 'application/vnd.api+json',
+        revision: '2025-07-15',
+        'content-type': 'application/vnd.api+json',
+        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+      },
+      body: eventBody
+    };
+
+    const eventResponse = await fetch(eventUrl, eventOptions);
+
+    if (!eventResponse.ok) {
+      const eventError = await eventResponse.json();
+      return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: eventError});
+    }
+
+    res.json({message: 'Event sent to Klaviyo successfully'});
+  } catch (error) {
+    return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: error});
+  }
+});
+
+app.post('/check-medicaid-verification-password', (req, res) => {
+  const { password } = req.body;
+  const correctPassword = process.env.MEDICAID_VERIFICATION_PASSWORD;
+
+  if (password === correctPassword) {
+    res.json({valid: true});
+  } else {
+    res.json({valid: false});
+  }
+});
+
+app.post('/medicaid-eligibility-approved', async (req, res) => {
+  const { first_name, last_name, phone, email, urgency, caseNumber } = req.body;
+
+  try {
+    const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
+    customerSet(input: $input, identifier: $identifier) {
+        customer {
+          id
+          firstName
+          lastName
+          email
+          phone
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`;
+
+    const setCustomerVariables = {
+      'input': {
+        'firstName': first_name,
+        'lastName': last_name,
+        'email': email,
+        'phone': phone
+      },
+      'identifier': {
+        'phone': phone
+      }
+    };
+
+    const setCustomerResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: setCustomerQueryString, variables: setCustomerVariables}),
+    });
+
+    if (!setCustomerResponse.ok) {
+      const setCustomerError = await setCustomerResponse.json();
+      return res.status(500).json({message: 'There was an issue creating/updating customer in Shopify', data: setCustomerError});
+    }
+
+    const setCustomerData = await setCustomerResponse.json();
+
+    if (setCustomerData.data?.customerSet?.userErrors?.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in customer creation',
+        data: setCustomerData.data.customerSet.userErrors
+      });
+    }
+
+    if (!setCustomerData.data?.data?.customerSet?.customer?.id) {
+      return res.status(500).json({
+        message: 'No customer ID returned from Shopify',
+        data: setCustomerData
+      });
+    }
+
+    const customerId = setCustomerData.data.data.customerSet.customer.id;
+
+    const metafieldQueryString = `mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields {
+          id
+          key
+          value
+          namespace
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`;
+
+    const metafieldVariables = {
+      metafields: [
+        {
+          ownerId: customerId,
+          namespace: "custom",
+          key: "medicaid_case_number",
+          value: caseNumber,
+          type: "single_line_text_field"
+        }
+      ]
+    };
+
+    const metafieldResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: metafieldQueryString, variables: metafieldVariables}),
+    });
+
+    if (!metafieldResponse.ok) {
+      const metafieldError = await metafieldResponse.json();
+      return res.status(500).json({message: 'There was an issue creating metafield in Shopify', data: metafieldError});
+    }
+
+    const metafieldData = await metafieldResponse.json();
+
+    if (metafieldData.data?.metafieldsSet?.userErrors?.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in metafield creation',
+        data: metafieldData.data.metafieldsSet.userErrors
+      });
+    }
+
+    const addCustomerTagQueryString = `mutation addTags($id: ID!, $tags: [String!]!) {
+      tagsAdd(id: $id, tags: $tags) {
+        node {
+          id
+        }
+        userErrors {
+          message
+        }
+      }
+    }`;
+
+    const addCustomerTagVariables = {
+      'id': customerId,
+      'tags': ['Medicaid Eligible']
+    };
+
+    const addCustomerTagResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: addCustomerTagQueryString, variables: addCustomerTagVariables}),
+    });
+
+    if (!addCustomerTagResponse.ok) {
+      const tagError = await addCustomerTagResponse.json();
+      return res.status(500).json({message: 'There was an issue adding tag to customer in Shopify', data: tagError});
+    }
+
+    const addCustomerTagData = await addCustomerTagResponse.json();
+
+    if (addCustomerTagData.data?.tagsAdd?.userErrors?.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in tag addition',
+        data: addCustomerTagData.data.tagsAdd.userErrors
+      });
+    }
+
+    const createGiftCardQueryString = `mutation giftCardCreate($input: GiftCardCreateInput!) {
+      giftCardCreate(input: $input) {
+        giftCard {
+          id
+          expiresOn
+        }
+        giftCardCode
+        userErrors {
+          message
+          field
+          code
+        }
+      }
+    }`;
+
+    const expiresOn = new Date();
+    expiresOn.setDate(expiresOn.getDate() + 30);
+    const createGiftCardVariables = {
+      "input": {
+        "initialValue": 1200.00,
+        "expiresOn": expiresOn.toISOString().split('T')[0],
+        "note": `${email}`
+      }
+    };
+
+    const createGiftCardResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: createGiftCardQueryString, variables: createGiftCardVariables}),
+    });
+
+    if (!createGiftCardResponse.ok) {
+      const giftCardError = await createGiftCardResponse.json();
+      return res.status(500).json({message: 'There was an issue creating a gift card in Shopify', data: giftCardError});
+    }
+
+    const createGiftCardData = await createGiftCardResponse.json();
+
+    if (createGiftCardData.data?.giftCardCreate?.userErrors?.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in gift card creation',
+        data: createGiftCardData.data.giftCardCreate.userErrors
+      });
+    }
+
+    const giftCardCode = createGiftCardData.data.data.giftCardCreate.giftCardCode;
+
+    const body = `{
+      "data":{
+        "type":"event",
+        "attributes":{
+          "properties":{
+            "first_name":"${first_name}",
+            "last_name":"${last_name}",
+            "phone_number":"${phone}",
+            "email":"${email}",
+            "urgnecy":"${urgency}",
+            "gift_card":"${giftCardCode}"
+          },
+          "metric":{
+            "data":{
+              "type":"metric",
+              "attributes":{
+                "name":"Medicaid Eligibility Approved"
+              }
+            }
+          },
+          "profile":{
+            "data":{
+              "type":"profile",
+              "attributes":{
+                "email":"${email}",
+                "phone_number":"${phone}",
+                "first_name":"${first_name}",
+                "last_name":"${last_name}"
+              }
+            }
+          }
+        }
+      }
+    }`;
+    
+    const url = 'https://a.klaviyo.com/api/events';
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/vnd.api+json',
+        revision: '2025-07-15',
+        'content-type': 'application/vnd.api+json',
+        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+      },
+      body: body
+    };
+
+    const klaviyoResponse = await fetch(url, options);
+
+    if (!klaviyoResponse.ok) {
+      const klaviyoError = await klaviyoResponse.json();
+      return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
+    }
+  } catch (error) {
+    res.json({message: 'There was an issue processing the request', data: error});
+  }
+
+  res.status(202).json({message: 'Submission successful!'});
+});
+
+app.post('/medicaid-eligibility-declined', async (req, res) => {
+  const { first_name, last_name, phone, email, urgency } = req.body;
+
+  try {
+    const body = `{
+      "data":{
+        "type":"event",
+        "attributes":{
+          "properties":{
+            "first_name":"${first_name}",
+            "last_name":"${last_name}",
+            "phone_number":"${phone}",
+            "email":"${email}",
+            "urgnecy":"${urgency}"
+          },
+          "metric":{
+            "data":{
+              "type":"metric",
+              "attributes":{
+                "name":"Medicaid Eligibility Declined"
+              }
+            }
+          },
+          "profile":{
+            "data":{
+              "type":"profile",
+              "attributes":{
+                "email":"${email}",
+                "phone_number":"${phone}",
+                "first_name":"${first_name}",
+                "last_name":"${last_name}"
+              }
+            }
+          }
+        }
+      }
+    }`;
+    
+    const url = 'https://a.klaviyo.com/api/events';
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/vnd.api+json',
+        revision: '2025-07-15',
+        'content-type': 'application/vnd.api+json',
+        Authorization: `Klaviyo-API-Key ${process.env.KLAVIYO_SECRET_KEY}`
+      },
+      body: body
+    };
+
+    const klaviyoResponse = await fetch(url, options);
+
+    if (!klaviyoResponse.ok) {
+      const klaviyoError = await klaviyoResponse.json();
+      return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: klaviyoError});
+    }
+
+    res.status(202).json({message: 'Submission successful!'});
+  } catch (error) {
+    return res.status(500).json({message: 'There was an issue sending event to Klaviyo', data: error});
+  }
+});
+
+app.post('/add-medicaid-order-tags', async (req, res) => {
+  const { orderId, customerId } = req.body;
+
+  try {
+    const getCustomerQueryString = `query {
+      customer(id: "${customerId}") {
+        tags
+      }
+    }`;
+
+    const getCustomerResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({queryString: getCustomerQueryString}),
+    });
+
+    const getCustomerData = await getCustomerResponse.json();
+
+    if (!getCustomerResponse.ok) {
+      return res.status(500).json({
+        message: 'There was an issue retrieving customer tags from Shopify', 
+        data: getCustomerData
+      });
+    }
+
+    const getCustomerUserErrors = getCustomerData.data?.data?.tagsAdd?.userErrors || getCustomerData.data?.tagsAdd?.userErrors;
+    
+    if (getCustomerUserErrors && getCustomerUserErrors.length > 0) {
+      return res.status(500).json({
+        message: 'GraphQL errors in retrieving customer',
+        data: getCustomerUserErrors
+      });
+    }
+
+    const customerTags = getCustomerData.data?.data?.customer?.tags || [];
+
+    if (customerTags.includes('Medicaid Eligible')) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      const addTagsQueryString = `mutation addTags($id: ID!, $tags: [String!]!) {
+        tagsAdd(id: $id, tags: $tags) {
+          node {
+            id
+          }
           userErrors {
-            field
             message
           }
         }
       }`;
 
-      const createDiscountCodeVariables = {
-        "basicCodeDiscount": {
-          "title": `Medicaid Discount - ${discountCode}`,
-          "code": `MCMD${discountCode}`,
-          "startsAt": new Date(Date.now()),
-          "endsAt": null,
-          "customerGets": {
-            "value": {
-              "discountAmount": {
-                "amount": "1200.00",
-                "appliesOnEachItem": false
-              }
-            },
-            "items": {
-              "all": true
-            }
-          },
-          "usageLimit": 1,
-          "customerSelection": {
-            "all": true
-          }
-        }
+      const addTagsVariables = {
+        'id': orderId,
+        'tags': ['Medicaid', '‼️Awaiting Payment‼️']
       };
 
-      const createResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+      const addTagsResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({queryString: createDiscountCodeQueryString, variables: createDiscountCodeVariables}),
+        body: JSON.stringify({queryString: addTagsQueryString, variables: addTagsVariables}),
       });
 
-      const createData = await createResponse.json();
-      return createData;*/
-      const { data: getRowData, error: getRowError } = await supabase
-        .from('Medicaid Checkout Codes')
-        .select()
-        .eq('code', `MCMD${discountCode}`);
-      console.log('getRowData:', getRowData);
+      const addTagsData = await addTagsResponse.json();
 
-      if (getRowError) {
-        console.error('Supabase select error:', getRowError);
-        throw getRowError;
-      } else if (getRowData && getRowData.length > 0) {
-        return await generateUniqueDiscountCode();
+      if (!addTagsResponse.ok) {
+        return res.status(500).json({
+          message: 'There was an issue adding tag to order in Shopify', 
+          data: addTagsData
+        });
       }
 
-      const { data: newRowData, error: newRowError } = await supabase
-        .from('Medicaid Checkout Codes')
-        .insert({first_name: first_name, last_name: last_name, email: email, code: `MCMD${discountCode}`})
-        .select();
-
-      if (newRowError) {
-        console.error('Supabase insert error:', newRowError);
-        throw newRowError;
+      const addTagsUserErrors = addTagsData.data?.data?.tagsAdd?.userErrors || addTagsData.data?.tagsAdd?.userErrors;
+      
+      if (addTagsUserErrors && addTagsUserErrors.length > 0) {
+        return res.status(500).json({
+          message: 'GraphQL errors in tag addition',
+          data: addTagsUserErrors
+        });
       }
 
-      return newRowData;
-    } catch (error) {
-      throw error;
+      res.json({message: 'Tags added successfully'});
+    } else {
+      res.json({message: 'Customer is not Medicaid Eligible, no tags added to order'});
     }
-  }
-
-  try {
-    const result = await generateUniqueDiscountCode();
-    res.json({data: result, discount_code: `MCMD${discountCode}`});
   } catch (error) {
-    console.error('Error generating discount code:', error);
-    res.status(500).json({error: 'Failed to generate discount code'});
+    return res.status(500).json({
+      message: 'There was an issue adding tag to order in Shopify', 
+      error: error.message || error
+    });
   }
 });
 
