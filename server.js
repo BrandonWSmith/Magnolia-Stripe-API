@@ -1719,7 +1719,7 @@ app.post('/send-forms', async (req, res) => {
               }
             ]
           },
-          ${nokPrefills.length > 0 ? `${nokPrefills.toString()},` : ''}{
+          ${nokPrefills.length > 0 ? `${nokPrefills.map(role => JSON.stringify(role))},` : ''}{
             "RoleIndex": ${2 + nokCount},
             "SignerName": "Magnolia Cremations",
             "SignerOrder": ${2 + nokCount},
@@ -1754,7 +1754,7 @@ app.post('/send-forms', async (req, res) => {
         const data = await response.json();
 
         if (!response.ok) {
-          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: JSON.stringify(body)});
         }
 
         res.json({message: 'Forms sent successfully', data: data});
