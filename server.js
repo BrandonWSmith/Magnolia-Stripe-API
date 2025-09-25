@@ -1751,10 +1751,10 @@ app.post('/send-forms', async (req, res) => {
           body: body
         });
 
-        const data = response.text();
+        const data = await response.text();
 
         if (!response.ok) {
-          return res.status(500).json({message: 'There was an issue sending forms', data: data, response: response});
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, response: response});
         }
 
         res.json({message: 'Forms sent successfully', data: data});
