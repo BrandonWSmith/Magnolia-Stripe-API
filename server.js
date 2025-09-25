@@ -1403,7 +1403,7 @@ app.post('/send-forms', async (req, res) => {
               },
               {
                 "Id": "urn_price",
-                "Value": "$${formData.urn_price || 0}"
+                "Value": "${formData.urn_price ? `$${formData.urn_price}` : ''}"
               },
               {
                 "Id": "merchandise_title_0",
@@ -1417,7 +1417,7 @@ app.post('/send-forms', async (req, res) => {
               },
               {
                 "Id": "merchandise_price_0",
-                "Value": "$${formData.merchandise_0_total || ''}"
+                "Value": "${formData.merchandise_0_total ? `$${formData.merchandise_0_total}` : ''}"
               },
               {
                 "Id": "merchandise_title_1",
@@ -1431,7 +1431,7 @@ app.post('/send-forms', async (req, res) => {
               },
               {
                 "Id": "merchandise_price_1",
-                "Value": "$${formData.merchandise_1_total || ''}"
+                "Value": "${formData.merchandise_1_total ? `$${formData.merchandise_1_total}` : ''}"
               },
               {
                 "Id": "merchandise_title_2",
@@ -1445,7 +1445,7 @@ app.post('/send-forms', async (req, res) => {
               },
               {
                 "Id": "merchandise_price_2",
-                "Value": "$${formData.merchandise_2_total || ''}"
+                "Value": "${formData.merchandise_2_total ? `$${formData.merchandise_2_total}` : ''}"
               },
               {
                 "Id": "merchandise_title_3",
@@ -1459,7 +1459,7 @@ app.post('/send-forms', async (req, res) => {
               },
               {
                 "Id": "merchandise_price_3",
-                "Value": "$${formData.merchandise_3_total || ''}"
+                "Value": "${formData.merchandise_3_total ? `$${formData.merchandise_3_total}` : ''}"
               },
               {
                 "Id": "witness_price",
