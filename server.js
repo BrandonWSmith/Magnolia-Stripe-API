@@ -1740,23 +1740,27 @@ app.post('/send-forms', async (req, res) => {
         "RoleRemovalIndices": [${unusedRoleIndices}]
       }`;
 
-      const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=8bcbdc10-3630-4a14-8884-1b96480ca07c", {
-        method: "POST",
-        headers: {
-          "accept": "application/json",
-          "X-API-KEY": "OWI0Y2UxNjctZjQ2NS00YzAzLWIxYWUtZjhhMGIxZGQ0YTc0",
-          "Content-Type": "application/json"
-        },
-        body: body
-      });
+      try {
+        const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=8bcbdc10-3630-4a14-8884-1b96480ca07c", {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "X-API-KEY": "OWI0Y2UxNjctZjQ2NS00YzAzLWIxYWUtZjhhMGIxZGQ0YTc0",
+            "Content-Type": "application/json"
+          },
+          body: body
+        });
 
-      const data = response.json();
+        const data = response.json();
 
-      if (!response.ok) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: data});
+        if (!response.ok) {
+          return res.status(500).json({message: 'There was an issue sending forms', data: data});
+        }
+
+        res.json({message: 'Forms sent successfully', data: data});
+      } catch (error) {
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
       }
-
-      res.json({message: 'Forms sent successfully', data: data});
     }
   }
 });
