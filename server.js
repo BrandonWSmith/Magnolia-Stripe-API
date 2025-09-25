@@ -1754,7 +1754,7 @@ app.post('/send-forms', async (req, res) => {
         const data = response.text();
 
         if (!response.ok) {
-          return res.status(500).json({message: 'There was an issue sending forms', data: data});
+          return res.status(500).json({message: 'There was an issue sending forms', data: data, response: response});
         }
 
         res.json({message: 'Forms sent successfully', data: data});
