@@ -2187,9 +2187,9 @@ app.post('/send-forms', async (req, res) => {
           ]
         },
         ${nokPrefills.length > 0 ? `${nokPrefills.map(role => JSON.stringify(role))},` : ''}{
-          "RoleIndex": ${2 + nokCount},
+          "RoleIndex": ${3 + nokCount},
           "SignerName": "Magnolia Cremations",
-          "SignerOrder": ${2 + nokCount},
+          "SignerOrder": ${3 + nokCount},
           "SignerEmail": "orders@magnoliacremations.com",
           "SignerType": "Signer",
           "ExistingFormFields": [
