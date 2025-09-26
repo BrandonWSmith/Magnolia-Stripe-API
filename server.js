@@ -1323,24 +1323,6 @@ app.post('/send-forms', async (req, res) => {
   let nokCount = 0;
 
   if (formData.service_package_type === "Immediate Need") {
-    const immediateNeedNokPrefills = [];
-    for (let i = 0; i < nokCount; i++) {
-      const prefillData = {
-        "RoleIndex": i + 2,
-        "SignerName": formData[`next_of_kin_${i}_full_name`],
-        "SignerOrder": i + 2,
-        "SignerEmail": formData[`next_of_kin_${i}_email`],
-        "SignerType": "Signer",
-        "ExistingFormFields": [
-          {
-            "Id": `nextofkin_relationship_${i}`,
-            "Value": formData[`next_of_kin_${i}_relationship`]
-          }
-        ]
-      };
-      immediateNeedNokPrefills.push(prefillData);
-    }
-
     let unusedRoleIndices = [2, 3, 4, 5, 6];
     Object.keys(formData).forEach(key => {
       switch (key) {
@@ -1368,6 +1350,24 @@ app.post('/send-forms', async (req, res) => {
           break;
       }
     });
+
+    const nokPrefills = [];
+    for (let i = 0; i < nokCount; i++) {
+      const prefillData = {
+        "RoleIndex": i + 2,
+        "SignerName": formData[`next_of_kin_${i}_full_name`],
+        "SignerOrder": i + 2,
+        "SignerEmail": formData[`next_of_kin_${i}_email`],
+        "SignerType": "Signer",
+        "ExistingFormFields": [
+          {
+            "Id": `nextofkin_relationship_${i}`,
+            "Value": formData[`next_of_kin_${i}_relationship`]
+          }
+        ]
+      };
+      nokPrefills.push(prefillData);
+    }
 
     const body = `{
       "Roles": [
@@ -1718,7 +1718,7 @@ app.post('/send-forms', async (req, res) => {
             }
           ]
         },
-        ${immediateNeedNokPrefills.length > 0 ? `${immediateNeedNokPrefills.map(role => JSON.stringify(role))},` : ''}{
+        ${nokPrefills.length > 0 ? `${nokPrefills.map(role => JSON.stringify(role))},` : ''}{
           "RoleIndex": ${2 + nokCount},
           "SignerName": "Magnolia Cremations",
           "SignerOrder": ${2 + nokCount},
@@ -2121,28 +2121,6 @@ app.post('/send-forms', async (req, res) => {
       ]
     }`;
 
-    const passingSoonNokPrefills = [];
-    for (let i = 0; i < nokCount; i++) {
-      const prefillData = {
-        "RoleIndex": i + 3,
-        "SignerName": formData[`next_of_kin_${i}_full_name`],
-        "SignerOrder": i + 3,
-        "SignerEmail": formData[`next_of_kin_${i}_email`],
-        "SignerType": "Signer",
-        "ExistingFormFields": [
-          {
-            "Id": "nextofkin_name_0",
-            "Value": formData[`next_of_kin_${i}_full_name`]
-          },
-          {
-            "Id": `nextofkin_relationship_${i}`,
-            "Value": formData[`next_of_kin_${i}_relationship`]
-          }
-        ]
-      };
-      passingSoonNokPrefills.push(prefillData);
-    }
-
     let unusedRoleIndices = [3, 4, 5, 6, 7];
     Object.keys(formData).forEach(key => {
       switch (key) {
@@ -2170,6 +2148,28 @@ app.post('/send-forms', async (req, res) => {
           break;
       }
     });
+
+    const nokPrefills = [];
+    for (let i = 0; i < nokCount; i++) {
+      const prefillData = {
+        "RoleIndex": i + 3,
+        "SignerName": formData[`next_of_kin_${i}_full_name`],
+        "SignerOrder": i + 3,
+        "SignerEmail": formData[`next_of_kin_${i}_email`],
+        "SignerType": "Signer",
+        "ExistingFormFields": [
+          {
+            "Id": "nextofkin_name_0",
+            "Value": formData[`next_of_kin_${i}_full_name`]
+          },
+          {
+            "Id": `nextofkin_relationship_${i}`,
+            "Value": formData[`next_of_kin_${i}_relationship`]
+          }
+        ]
+      };
+      nokPrefills.push(prefillData);
+    }
 
     const cremAuthBody = `{
       "Roles": [
@@ -2212,8 +2212,8 @@ app.post('/send-forms', async (req, res) => {
               "Value": "${formData.contact_relationship}"
             }
           ]
-        }${passingSoonNokPrefills.length > 0 ? `,
-          ${passingSoonNokPrefills.map(role => JSON.stringify(role))}` : ''}
+        }${nokPrefills.length > 0 ? `,
+          ${nokPrefills.map(role => JSON.stringify(role))}` : ''}
       ],
       "RoleRemovalIndices": [${unusedRoleIndices}]
     }`;
