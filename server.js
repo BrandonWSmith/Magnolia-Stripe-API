@@ -2159,7 +2159,7 @@ app.post('/send-forms', async (req, res) => {
         "SignerType": "Signer",
         "ExistingFormFields": [
           {
-            "Id": "nextofkin_name_0",
+            "Id": `nextofkin_name_${i}`,
             "Value": formData[`next_of_kin_${i}_full_name`]
           },
           {
