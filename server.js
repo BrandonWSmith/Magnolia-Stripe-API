@@ -2185,24 +2185,8 @@ app.post('/send-forms', async (req, res) => {
               "Value": "${formData.contact_relationship}"
             }
           ]
-        },
-        ${nokPrefills.length > 0 ? `${nokPrefills.map(role => JSON.stringify(role))},` : ''}{
-          "RoleIndex": ${3 + nokCount},
-          "SignerName": "Magnolia Cremations",
-          "SignerOrder": ${3 + nokCount},
-          "SignerEmail": "orders@magnoliacremations.com",
-          "SignerType": "Signer",
-          "ExistingFormFields": [
-            {
-              "Id": "deceased_death_2",
-              "Value": "${formData.deceased_date_death}"
-            },
-            {
-              "Id": "deceased_place_of_death_full",
-              "Value": "${formData.place_of_passing_facility_name != '' ? `${formData.place_of_passing_facility_name} ` : ''}(${formData.place_of_passing_location_type}) ${formData.place_of_passing_street_address}, ${formData.place_of_passing_city}, ${formData.place_of_passing_state} ${formData.place_of_passing_zip_code}"
-            }
-          ]
-        }
+        }${nokPrefills.length > 0 ? `,
+          ${nokPrefills.map(role => JSON.stringify(role))},` : ''}
       ],
       "RoleRemovalIndices": [${unusedRoleIndices}]
     }`;
@@ -2238,7 +2222,7 @@ app.post('/send-forms', async (req, res) => {
         const cremAuthData = await cremAuthResponse.json();
 
         if (!cremAuthResponse.ok) {
-          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData});
+          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, body: cremAuthBody});
         }
 
         res.json({message: 'Forms sent successfully'});
