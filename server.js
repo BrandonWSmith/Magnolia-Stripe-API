@@ -1323,7 +1323,7 @@ app.post('/send-forms', async (req, res) => {
   let nokCount = 0;
 
   if (formData.service_package_type === "Immediate Need") {
-    const nokPrefills = [];
+    const immediateNeedNokPrefills = [];
     for (let i = 0; i < nokCount; i++) {
       const prefillData = {
         "RoleIndex": i + 2,
@@ -1338,7 +1338,7 @@ app.post('/send-forms', async (req, res) => {
           }
         ]
       };
-      nokPrefills.push(prefillData);
+      immediateNeedNokPrefills.push(prefillData);
     }
 
     let unusedRoleIndices = [2, 3, 4, 5, 6];
@@ -1718,7 +1718,7 @@ app.post('/send-forms', async (req, res) => {
             }
           ]
         },
-        ${nokPrefills.length > 0 ? `${nokPrefills.map(role => JSON.stringify(role))},` : ''}{
+        ${immediateNeedNokPrefills.length > 0 ? `${immediateNeedNokPrefills.map(role => JSON.stringify(role))},` : ''}{
           "RoleIndex": ${2 + nokCount},
           "SignerName": "Magnolia Cremations",
           "SignerOrder": ${2 + nokCount},
@@ -2121,7 +2121,7 @@ app.post('/send-forms', async (req, res) => {
       ]
     }`;
 
-    const nokPrefills = [];
+    const passingSoonNokPrefills = [];
     for (let i = 0; i < nokCount; i++) {
       const prefillData = {
         "RoleIndex": i + 3,
@@ -2140,7 +2140,7 @@ app.post('/send-forms', async (req, res) => {
           }
         ]
       };
-      nokPrefills.push(prefillData);
+      passingSoonNokPrefills.push(prefillData);
     }
 
     let unusedRoleIndices = [3, 4, 5, 6, 7];
@@ -2212,8 +2212,8 @@ app.post('/send-forms', async (req, res) => {
               "Value": "${formData.contact_relationship}"
             }
           ]
-        }${nokPrefills.length > 0 ? `,
-          ${nokPrefills.map(role => JSON.stringify(role))},` : ''}
+        }${passingSoonNokPrefills.length > 0 ? `,
+          ${passingSoonNokPrefills.map(role => JSON.stringify(role))}` : ''}
       ],
       "RoleRemovalIndices": [${unusedRoleIndices}]
     }`;
