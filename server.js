@@ -2111,12 +2111,11 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "contact_relationship",
               "Value": "${formData.contact_relationship}"
-            }${liability && `,
+            }${liability ? `,
               {
                 "Id": "deceased_full_name",
                 "Value": "${formData.deceased_first_name}${formData.deceased_middle_name != '' ? ` ${formData.deceased_middle_name}` : ''} ${formData.deceased_last_name}${formData.deceased_suffix != '' ? ` ${formData.deceased_suffix}` : ''}"
-              }`
-            }
+              }` : ''}
           ]
         }
       ]
