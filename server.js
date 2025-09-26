@@ -1311,6 +1311,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 
 app.post('/send-forms', async (req, res) => {
   const { formData } = req.body;
+  const boldSignApiKey = "MjVlYzVkNGMtNDIwNC00NTNkLWE1NDItMTYzZjc0OTM2NGUx";
 
   const witnessCremation = formData.witness_cremation_quantity > 0 ? "Selected" : "Not Selected";
   const urnDetails = formData.urn_details ? formData.urn_details.split(",") : null;
@@ -1384,7 +1385,7 @@ app.post('/send-forms', async (req, res) => {
             },
             {
               "Id": "service_package",
-              "Value": "${formData.ervice_package_package_name}"
+              "Value": "${formData.service_package_package_name}"
             },
             {
               "Id": "service_package_price",
@@ -1745,7 +1746,7 @@ app.post('/send-forms', async (req, res) => {
           method: "POST",
           headers: {
             "accept": "application/json",
-            "X-API-KEY": "OWI0Y2UxNjctZjQ2NS00YzAzLWIxYWUtZjhhMGIxZGQ0YTc0",
+            "X-API-KEY": boldSignApiKey,
             "Content-Type": "application/json"
           },
           body: body
@@ -1767,7 +1768,7 @@ app.post('/send-forms', async (req, res) => {
           method: "POST",
           headers: {
             "accept": "application/json",
-            "X-API-KEY": "OWI0Y2UxNjctZjQ2NS00YzAzLWIxYWUtZjhhMGIxZGQ0YTc0",
+            "X-API-KEY": boldSignApiKey,
             "Content-Type": "application/json"
           },
           body: body
