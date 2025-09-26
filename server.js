@@ -1321,35 +1321,6 @@ app.post('/send-forms', async (req, res) => {
   const merchandiseDetails3 = formData.merchandise_3_details ? formData.merchandise_3_details.split(",") : null;
   const liability = formData.private_family_viewing_total > 0 || witnessCremation === "Selected";
   let nokCount = 0;
-  let unusedRoleIndices = [2, 3, 4, 5, 6];
-  Object.keys(formData).forEach(key => {
-    switch (key) {
-      case "next_of_kin_0_email":
-        nokCount++;
-        unusedRoleIndices = unusedRoleIndices.filter(index => index != 2);
-        break;
-      case "next_of_kin_1_email":
-        nokCount++;
-        unusedRoleIndices = unusedRoleIndices.filter(index => index != 3);
-        break;
-      case "next_of_kin_2_email":
-        nokCount++;
-        unusedRoleIndices = unusedRoleIndices.filter(index => index != 4);
-        break;
-      case "next_of_kin_3_email":
-        nokCount++;
-        unusedRoleIndices = unusedRoleIndices.filter(index => index != 5);
-        break;
-      case "next_of_kin_4_email":
-        nokCount++;
-        unusedRoleIndices = unusedRoleIndices.filter(index => index != 6);
-        break;
-      default:
-        break;
-    }
-  });
-
-  console.log(unusedRoleIndices);
 
   if (formData.service_package_type === "Immediate Need") {
     const nokPrefills = [];
@@ -1369,6 +1340,34 @@ app.post('/send-forms', async (req, res) => {
       };
       nokPrefills.push(prefillData);
     }
+
+    let unusedRoleIndices = [2, 3, 4, 5, 6];
+    Object.keys(formData).forEach(key => {
+      switch (key) {
+        case "next_of_kin_0_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 2);
+          break;
+        case "next_of_kin_1_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 3);
+          break;
+        case "next_of_kin_2_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 4);
+          break;
+        case "next_of_kin_3_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 5);
+          break;
+        case "next_of_kin_4_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 6);
+          break;
+        default:
+          break;
+      }
+    });
 
     const body = `{
       "Roles": [
@@ -2143,6 +2142,34 @@ app.post('/send-forms', async (req, res) => {
       };
       nokPrefills.push(prefillData);
     }
+
+    let unusedRoleIndices = [3, 4, 5, 6, 7];
+    Object.keys(formData).forEach(key => {
+      switch (key) {
+        case "next_of_kin_0_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 3);
+          break;
+        case "next_of_kin_1_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 4);
+          break;
+        case "next_of_kin_2_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 5);
+          break;
+        case "next_of_kin_3_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 6);
+          break;
+        case "next_of_kin_4_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 7);
+          break;
+        default:
+          break;
+      }
+    });
 
     const cremAuthBody = `{
       "Roles": [
