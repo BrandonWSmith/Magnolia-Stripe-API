@@ -2426,35 +2426,35 @@ app.post('/send-forms', async (req, res) => {
               },
               {
                 "Id": "purchaser_first_name",
-                "Value": "${formData.purchaser_first_name}"
+                "Value": "${formData.contact_first_name}"
               },
               {
                 "Id": "purchaser_middle_name",
-                "Value": "${formData.purchaser_middle_name}"
+                "Value": "${formData.contact_middle_name}"
               },
               {
                 "Id": "purchaser_last_name",
-                "Value": "${formData.purchaser_last_name}"
+                "Value": "${formData.contact_last_name}"
               },
               {
                 "Id": "purchaser_suffix",
-                "Value": "${formData.purchaser_suffix}"
+                "Value": "${formData.contact_suffix}"
               },
               {
                 "Id": "purchaser_relationship",
-                "Value": "${formData.purchaser_relationship}"
+                "Value": "${formData.contact_relationship}"
               },
               {
                 "Id": "purchaser_phone",
-                "Value": "${formData.purchaser_phone}"
+                "Value": "${formData.contact_phone}"
               },
               {
                 "Id": "purchaser_address",
-                "Value": "${formData.purchaser_street_address}, ${formData.purchaser_city}, ${formData.purchaser_state} ${formData.purchaser_zip_code}"
+                "Value": "${formData.contact_street_address}, ${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
               },
               {
                 "Id": "purchaser_email",
-                "Value": "${formData.purchaser_email}"
+                "Value": "${formData.contact_email}"
               },
               {
                 "Id": "deceased_first_name",
