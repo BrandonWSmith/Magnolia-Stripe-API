@@ -2111,10 +2111,11 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "contact_relationship",
               "Value": "${formData.contact_relationship}"
-            },
-            {
-              "Id": "deceased_full_name",
-              "Value": "${formData.deceased_first_name}${formData.deceased_middle_name != '' ? ` ${formData.deceased_middle_name}` : ''} ${formData.deceased_last_name}${formData.deceased_suffix != '' ? ` ${formData.deceased_suffix}` : ''}"
+            }${liability && `,
+              {
+                "Id": "deceased_full_name",
+                "Value": "${formData.deceased_first_name}${formData.deceased_middle_name != '' ? ` ${formData.deceased_middle_name}` : ''} ${formData.deceased_last_name}${formData.deceased_suffix != '' ? ` ${formData.deceased_suffix}` : ''}"
+              }`
             }
           ]
         }
@@ -2249,7 +2250,7 @@ app.post('/send-forms', async (req, res) => {
         const cremAuthData = await cremAuthResponse.json();
 
         if (!cremAuthResponse.ok) {
-          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, body: cremAuthBody});
+          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData});
         }
 
         res.json({message: 'Forms sent successfully'});
