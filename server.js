@@ -10,6 +10,8 @@ const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST);
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const { GoogleAuth } = require('google-auth-library');
+const { google } = require('googleapis');
 
 app.use(cors({
   origin: '*',
@@ -1320,6 +1322,109 @@ app.post('/send-forms', async (req, res) => {
   const merchandiseDetails2 = formData.merchandise_2_details ? formData.merchandise_2_details.split(",") : null;
   const merchandiseDetails3 = formData.merchandise_3_details ? formData.merchandise_3_details.split(",") : null;
   const liability = formData.private_family_viewing_total > 0 || witnessCremation === "Selected";
+
+  async function sendToGoogleSheet() {
+    const auth = new GoogleAuth({
+      keyFile: './google.json',
+      scopes: 'https://www.googleapis.com/auth/spreadsheets',
+    });
+
+    const service = google.sheets({ version: 'v4', auth });
+
+    const spreadsheetID = '';
+    const range = 'Sheet1!A2';
+    const valueInputOption = 'USER_ENTERED';
+
+    const values = [
+      [
+        formData.service_package_type,
+        formData.service_package_package_name,
+        formData.urn_title,
+        formData.urn_details,
+        `${formData.merchandise_0_title ? `${formData.merchandise_0_title}` : ''}${formData.merchandise_1_title ? `, ${formData.merchandise_1_title}, ` : ''}${formData.merchandise_2_title ? `, ${formData.merchandise_2_title}` : ''}${formData.merchandise_3_title ? `, ${formData.merchandise_3_title}` : ''}`,
+        `${formData.merchandise_0_details ? `Merchandise0: ${formData.merchandise_0_details}` : ''}${formData.merchandise_1_details ? ` Merchandise1: ${formData.merchandise_1_details}, ` : ''}${formData.merchandise_2_details ? ` Merchandise2: ${formData.merchandise_2_details}` : ''}${formData.merchandise_3_details ? ` Merchandise3: ${formData.merchandise_3_details}` : ''}`,
+        liability ? "Yes" : "No",
+        formData.contact_first_name,
+        formData.contact_middle_name,
+        formData.contact_last_name,
+        formData.contact_suffix,
+        formData.contact_phone,
+        formData.contact_email,
+        formData.contact_street_address,
+        formData.contact_city,
+        formData.contact_state,
+        formData.contact_zip_code,
+        formData.contact_relationship,
+        formData.contact_gender,
+        formData.contact_age,
+        formData.deceased_first_name,
+        formData.deceased_middle_name,
+        formData.deceased_last_name,
+        formData.deceased_suffix,
+        formData.deceased_phone,
+        formData.deceased_email,
+        formData.deceased_street_address,
+        formData.deceased_city,
+        formData.deceased_state,
+        formData.deceased_zip_code,
+        formData.deceased_date_birth,
+        formData.deceased_date_death,
+        formData.deceased_age,
+        formData.deceased_gender,
+        formData.deceased_social_security_number,
+        `${formData.pick_up_location_facility_name != '' ? `${formData.pick_up_location_facility_name} ` : ''}(${formData.pick_up_location_location_type}) ${formData.pick_up_location_street_address}, ${formData.pick_up_location_city}, ${formData.pick_up_location_state} ${formData.pick_up_location_zip_code}`,
+        `${formData.place_of_passing_facility_name != '' ? `${formData.place_of_passing_facility_name} ` : ''}(${formData.place_of_passing_location_type}) ${formData.place_of_passing_street_address}, ${formData.place_of_passing_city}, ${formData.place_of_passing_state} ${formData.place_of_passing_zip_code}`,
+        `${formData.next_of_kin_0_full_name ? formData.next_of_kin_0_full_name : ''}`,
+        `${formData.next_of_kin_0_email ? formData.next_of_kin_0_email : ''}`,
+        `${formData.next_of_kin_0_phone ? formData.next_of_kin_0_phone : ''}`,
+        `${formData.next_of_kin_0_relationship ? formData.next_of_kin_0_relationship : ''}`,
+        `${formData.next_of_kin_0_street_address ? `${formData.next_of_kin_0_street_address}, ${formData.next_of_kin_0_city}, ${formData.next_of_kin_0_state} ${formData.next_of_kin_0_zip_code}` : ''}`,
+        `${formData.next_of_kin_1_full_name ? formData.next_of_kin_1_full_name : ''}`,
+        `${formData.next_of_kin_1_email ? formData.next_of_kin_1_email : ''}`,
+        `${formData.next_of_kin_1_phone ? formData.next_of_kin_1_phone : ''}`,
+        `${formData.next_of_kin_1_relationship ? formData.next_of_kin_1_relationship : ''}`,
+        `${formData.next_of_kin_1_street_address ? `${formData.next_of_kin_1_street_address}, ${formData.next_of_kin_1_city}, ${formData.next_of_kin_1_state} ${formData.next_of_kin_1_zip_code}` : ''}`,
+        `${formData.next_of_kin_2_full_name ? formData.next_of_kin_2_full_name : ''}`,
+        `${formData.next_of_kin_2_email ? formData.next_of_kin_2_email : ''}`,
+        `${formData.next_of_kin_2_phone ? formData.next_of_kin_2_phone : ''}`,
+        `${formData.next_of_kin_2_relationship ? formData.next_of_kin_2_relationship : ''}`,
+        `${formData.next_of_kin_2_street_address ? `${formData.next_of_kin_2_street_address}, ${formData.next_of_kin_2_city}, ${formData.next_of_kin_2_state} ${formData.next_of_kin_2_zip_code}` : ''}`,
+        `${formData.next_of_kin_3_full_name ? formData.next_of_kin_3_full_name : ''}`,
+        `${formData.next_of_kin_3_email ? formData.next_of_kin_3_email : ''}`,
+        `${formData.next_of_kin_3_phone ? formData.next_of_kin_3_phone : ''}`,
+        `${formData.next_of_kin_3_relationship ? formData.next_of_kin_3_relationship : ''}`,
+        `${formData.next_of_kin_3_street_address ? `${formData.next_of_kin_3_street_address}, ${formData.next_of_kin_3_city}, ${formData.next_of_kin_3_state} ${formData.next_of_kin_3_zip_code}` : ''}`,
+        `${formData.next_of_kin_4_full_name ? formData.next_of_kin_4_full_name : ''}`,
+        `${formData.next_of_kin_4_email ? formData.next_of_kin_4_email : ''}`,
+        `${formData.next_of_kin_4_phone ? formData.next_of_kin_4_phone : ''}`,
+        `${formData.next_of_kin_4_relationship ? formData.next_of_kin_4_relationship : ''}`,
+        `${formData.next_of_kin_4_street_address ? `${formData.next_of_kin_4_street_address}, ${formData.next_of_kin_4_city}, ${formData.next_of_kin_4_state} ${formData.next_of_kin_4_zip_code}` : ''}`,
+        formData.delivery_method,
+        `${formData.shipping_address ? formData.shipping_address : ''}`,
+        formData.total_before_tax,
+        formData.sales_tax,
+        formData.total_order
+      ]
+    ];
+
+    const resource = {
+      values,
+    }
+
+    const results = await service.spreadsheets.values.update({
+      spreadsheetID,
+      range,
+      valueInputOption,
+      resource
+    });
+
+    const data = results.json();
+
+    return data;
+  }
+
+  const googleSheetsData = await sendToGoogleSheet();
+
   let nokCount = 0;
 
   if (formData.service_package_type === "Immediate Need") {
@@ -1754,12 +1859,12 @@ app.post('/send-forms', async (req, res) => {
         const data = await response.json();
 
         if (!response.ok) {
-          return res.status(response.status).json({message: 'There was an issue sending forms', data: data});
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
         }
 
-        res.json({message: 'Forms sent successfully', data: data});
+        res.json({message: 'Forms sent successfully', , google_sheets_data: googleSheetsData});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
       }
     } else {
       try {
@@ -1776,12 +1881,12 @@ app.post('/send-forms', async (req, res) => {
         const data = await response.json();
 
         if (!response.ok) {
-          return res.status(response.status).json({message: 'There was an issue sending forms', data: data});
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, , google_sheets_data: googleSheetsData});
         }
 
-        res.json({message: 'Forms sent successfully'});
+        res.json({message: 'Forms sent successfully', , google_sheets_data: googleSheetsData});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, , google_sheets_data: googleSheetsData});
       }
     }
   } else if (formData.service_package_type === "Passing Soon") {
@@ -2233,7 +2338,7 @@ app.post('/send-forms', async (req, res) => {
         const sgsAndVitalData = await sgsAndVitalResponse.json();
 
         if (!sgsAndVitalResponse.ok) {
-          return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData});
+          return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, google_sheets_data: googleSheetsData});
         }
 
         const cremAuthResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=886f8e77-1140-4efb-aab5-c554fbb4f65a", {
@@ -2249,12 +2354,12 @@ app.post('/send-forms', async (req, res) => {
         const cremAuthData = await cremAuthResponse.json();
 
         if (!cremAuthResponse.ok) {
-          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData});
+          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, google_sheets_data: googleSheetsData});
         }
 
-        res.json({message: 'Forms sent successfully'});
+        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
       }
     } else {
       try {
@@ -2271,7 +2376,7 @@ app.post('/send-forms', async (req, res) => {
         const sgsAndVitalData = await sgsAndVitalResponse.json();
 
         if (!sgsAndVitalResponse.ok) {
-          return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData});
+          return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, google_sheets_data: googleSheetsData});
         }
 
         const cremAuthResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=23932329-d871-412c-98b6-492d57aabf88", {
@@ -2287,12 +2392,12 @@ app.post('/send-forms', async (req, res) => {
         const cremAuthData = await cremAuthResponse.json();
 
         if (!cremAuthResponse.ok) {
-          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData});
+          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, google_sheets_data: googleSheetsData});
         }
 
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
       }
     }
   } else if (formData.service_package_type === "Planning Ahead") {
@@ -2555,12 +2660,12 @@ app.post('/send-forms', async (req, res) => {
         const data = await response.json();
 
         if (!response.ok) {
-          return res.status(response.status).json({message: 'There was an issue sending forms', data: data});
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
         }
 
-        res.json({message: 'Forms sent successfully', data: data});
+        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
       }
     } else if (formData.deceased_state === "Kentucky") {
       if (formData.plan_ahead_person === "Loved One") {
@@ -2829,12 +2934,12 @@ app.post('/send-forms', async (req, res) => {
           const data = await response.json();
 
           if (!response.ok) {
-            return res.status(response.status).json({message: 'There was an issue sending forms', data: data});
+            return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
           }
 
-          res.json({message: 'Forms sent successfully', data: data});
+          res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
         } catch (error) {
-          return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
+          return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
         }
       } else {
         const body = `{
@@ -3082,12 +3187,12 @@ app.post('/send-forms', async (req, res) => {
           const data = await response.json();
 
           if (!response.ok) {
-            return res.status(response.status).json({message: 'There was an issue sending forms', data: data});
+            return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
           }
 
-          res.json({message: 'Forms sent successfully', data: data});
+          res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
         } catch (error) {
-          return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
+          return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
         }
       }
     }
