@@ -1862,7 +1862,7 @@ app.post('/send-forms', async (req, res) => {
           return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
         }
 
-        res.json({message: 'Forms sent successfully', , google_sheets_data: googleSheetsData});
+        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
       } catch (error) {
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
       }
@@ -1881,12 +1881,12 @@ app.post('/send-forms', async (req, res) => {
         const data = await response.json();
 
         if (!response.ok) {
-          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, , google_sheets_data: googleSheetsData});
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
         }
 
-        res.json({message: 'Forms sent successfully', , google_sheets_data: googleSheetsData});
+        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, , google_sheets_data: googleSheetsData});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
       }
     }
   } else if (formData.service_package_type === "Passing Soon") {
