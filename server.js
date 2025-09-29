@@ -1418,9 +1418,7 @@ app.post('/send-forms', async (req, res) => {
       resource
     });
 
-    const data = results.json();
-
-    return data;
+    return results;
   }
 
   const googleSheetsData = await sendToGoogleSheet();
