@@ -1411,14 +1411,22 @@ app.post('/send-forms', async (req, res) => {
       values,
     }
 
-    const results = await service.spreadsheets.values.update({
-      spreadsheetID,
-      range,
-      valueInputOption,
-      resource
-    });
+    try {
+      const results = await service.spreadsheets.values.update({
+        spreadsheetID,
+        range,
+        valueInputOption,
+        resource
+      });
 
-    return results;
+      if (!results.ok) {
+        res.json({message: 'There was an issue sending data to Google Sheets', data: results});
+      }
+
+      return results;
+    } catch (error) {
+      res.json({message: 'There was an issue sending data to Google Sheets', data: error.message || error});
+    }
   }
 
   const googleSheetsData = await sendToGoogleSheet();
