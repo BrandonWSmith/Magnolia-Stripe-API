@@ -1826,7 +1826,15 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "deceased_gender_2",
               "Value": "${formData.deceased_gender}"
-            }
+            },
+            {
+              "Id": "shipping_check",
+              "Value": "${formData.delivery_method}
+            }${formData.delivery_method === 'Delivery' ? `,
+            {
+              "Id": "shipping_address",
+              "Value": "${formData.shipping_address}"
+            }` : ''}
           ]
         },
         ${nokPrefills.length > 0 ? `${nokPrefills.map(role => JSON.stringify(role))},` : ''}{
@@ -2321,7 +2329,15 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "contact_relationship",
               "Value": "${formData.contact_relationship}"
-            }
+            },
+            {
+              "Id": "shipping_check",
+              "Value": "${formData.delivery_method}
+            }${formData.delivery_method === 'Delivery' ? `,
+            {
+              "Id": "shipping_address",
+              "Value": "${formData.shipping_address}"
+            }` : ''}
           ]
         }${nokPrefills.length > 0 ? `,
           ${nokPrefills.map(role => JSON.stringify(role))}` : ''}
