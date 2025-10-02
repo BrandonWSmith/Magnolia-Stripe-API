@@ -1313,7 +1313,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 
 app.post('/send-forms', async (req, res) => {
   const { formData } = req.body;
-  const boldSignApiKey = "MjVlYzVkNGMtNDIwNC00NTNkLWE1NDItMTYzZjc0OTM2NGUx";
+  const boldSignApiKey = process.env.BOLDSIGN_API_KEY;
 
   const witnessCremation = formData.witness_cremation_quantity > 0 ? "Selected" : "Not Selected";
   const urnDetails = formData.urn_details ? formData.urn_details.split(",") : null;
@@ -1325,13 +1325,13 @@ app.post('/send-forms', async (req, res) => {
 
   async function sendToGoogleSheet() {
     const auth = new GoogleAuth({
-      keyFile: './google.json',
+      keyFile: '/etc/secrets/google.json',
       scopes: 'https://www.googleapis.com/auth/spreadsheets',
     });
 
     const service = google.sheets({ version: 'v4', auth });
 
-    const spreadsheetId = '1U1Vhqoye685INlmRwcEpv3bW2W8S59oULmfINKc5jQY';
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
     const range = 'Sheet1!A2';
     const valueInputOption = 'USER_ENTERED';
 
@@ -1419,13 +1419,13 @@ app.post('/send-forms', async (req, res) => {
         resource
       });
 
-      if (!results.ok) {
-        res.json({message: 'There was an issue sending data to Google Sheets', data: results});
+      if (results.status != 200) {
+        return res.json({message: 'There was an issue sending data to Google Sheets', data: results});
       }
 
       return results;
     } catch (error) {
-      res.json({message: 'There was an issue sending data to Google Sheets', data: error.message || error});
+      return res.json({message: 'There was an issue sending data to Google Sheets', data: error.message || error});
     }
   }
 
@@ -2942,6 +2942,7 @@ app.post('/send-forms', async (req, res) => {
             }
           ]
         }`;
+        
         try {
           const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=a01c1cff-d4d0-4c6f-81a3-933c5f67a39f", {
             method: "POST",
