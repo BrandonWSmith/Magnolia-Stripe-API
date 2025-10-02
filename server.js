@@ -1333,6 +1333,7 @@ app.post('/send-forms', async (req, res) => {
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
     const range = 'Sheet1!A2';
     const valueInputOption = 'USER_ENTERED';
+    const insertDataOption = 'INSERT_ROWS';
 
     const values = [
       [
@@ -1422,6 +1423,7 @@ app.post('/send-forms', async (req, res) => {
         spreadsheetId,
         range,
         valueInputOption,
+        insertDataOption,
         resource
       });
 
