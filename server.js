@@ -1404,7 +1404,7 @@ app.post('/send-forms', async (req, res) => {
       //   formData.sales_tax,
       //   formData.total_order
       // ]
-      Object.keys(formData).map(key => formData[key])
+      Object.keys(formData).map(key => key)
     ];
 
     const resource = {
