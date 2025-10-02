@@ -9,6 +9,8 @@ const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY);
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const { GoogleAuth } = require('google-auth-library');
+const { google } = require('googleapis');
 
 app.use(cors({
   origin: '*',
@@ -1305,6 +1307,1917 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       message: 'There was an issue adding tag to order in Shopify', 
       error: error.message || error
     });
+  }
+});
+
+app.post('/send-forms', async (req, res) => {
+  const { formData } = req.body;
+  const boldSignApiKey = process.env.BOLDSIGN_API_KEY;
+
+  const witnessCremation = formData.witness_cremation_quantity > 0 ? "Selected" : "Not Selected";
+  const urnDetails = formData.urn_details ? formData.urn_details.split(",") : null;
+  const merchandiseDetails0 = formData.merchandise_0_details ? formData.merchandise_0_details.split(",") : null;
+  const merchandiseDetails1 = formData.merchandise_1_details ? formData.merchandise_1_details.split(",") : null;
+  const merchandiseDetails2 = formData.merchandise_2_details ? formData.merchandise_2_details.split(",") : null;
+  const merchandiseDetails3 = formData.merchandise_3_details ? formData.merchandise_3_details.split(",") : null;
+  const liability = formData.private_family_viewing_total > 0 || witnessCremation === "Selected";
+
+  async function sendToGoogleSheet() {
+    const auth = new GoogleAuth({
+      keyFile: './google.json',
+      scopes: 'https://www.googleapis.com/auth/spreadsheets',
+    });
+
+    const service = google.sheets({ version: 'v4', auth });
+
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    const range = 'Sheet1!A2';
+    const valueInputOption = 'USER_ENTERED';
+
+    const values = [
+      [
+        formData.service_package_type,
+        formData.service_package_package_name,
+        formData.urn_title,
+        formData.urn_details,
+        `${formData.merchandise_0_title ? `${formData.merchandise_0_title}` : ''}${formData.merchandise_1_title ? `, ${formData.merchandise_1_title}, ` : ''}${formData.merchandise_2_title ? `, ${formData.merchandise_2_title}` : ''}${formData.merchandise_3_title ? `, ${formData.merchandise_3_title}` : ''}`,
+        `${formData.merchandise_0_details ? `Merchandise0: ${formData.merchandise_0_details}` : ''}${formData.merchandise_1_details ? ` Merchandise1: ${formData.merchandise_1_details}, ` : ''}${formData.merchandise_2_details ? ` Merchandise2: ${formData.merchandise_2_details}` : ''}${formData.merchandise_3_details ? ` Merchandise3: ${formData.merchandise_3_details}` : ''}`,
+        liability ? "Yes" : "No",
+        formData.contact_first_name,
+        formData.contact_middle_name,
+        formData.contact_last_name,
+        formData.contact_suffix,
+        formData.contact_phone,
+        formData.contact_email,
+        formData.contact_street_address,
+        formData.contact_city,
+        formData.contact_state,
+        formData.contact_zip_code,
+        formData.contact_relationship,
+        formData.contact_gender,
+        formData.contact_age,
+        formData.deceased_first_name,
+        formData.deceased_middle_name,
+        formData.deceased_last_name,
+        formData.deceased_suffix,
+        formData.deceased_phone,
+        formData.deceased_email,
+        formData.deceased_street_address,
+        formData.deceased_city,
+        formData.deceased_state,
+        formData.deceased_zip_code,
+        formData.deceased_date_birth,
+        formData.deceased_date_death,
+        formData.deceased_age,
+        formData.deceased_gender,
+        formData.deceased_social_security_number,
+        `${formData.pick_up_location_facility_name != '' ? `${formData.pick_up_location_facility_name} ` : ''}(${formData.pick_up_location_location_type}) ${formData.pick_up_location_street_address}, ${formData.pick_up_location_city}, ${formData.pick_up_location_state} ${formData.pick_up_location_zip_code}`,
+        `${formData.place_of_passing_facility_name != '' ? `${formData.place_of_passing_facility_name} ` : ''}(${formData.place_of_passing_location_type}) ${formData.place_of_passing_street_address}, ${formData.place_of_passing_city}, ${formData.place_of_passing_state} ${formData.place_of_passing_zip_code}`,
+        `${formData.next_of_kin_0_full_name ? formData.next_of_kin_0_full_name : ''}`,
+        `${formData.next_of_kin_0_email ? formData.next_of_kin_0_email : ''}`,
+        `${formData.next_of_kin_0_phone ? formData.next_of_kin_0_phone : ''}`,
+        `${formData.next_of_kin_0_relationship ? formData.next_of_kin_0_relationship : ''}`,
+        `${formData.next_of_kin_0_street_address ? `${formData.next_of_kin_0_street_address}, ${formData.next_of_kin_0_city}, ${formData.next_of_kin_0_state} ${formData.next_of_kin_0_zip_code}` : ''}`,
+        `${formData.next_of_kin_1_full_name ? formData.next_of_kin_1_full_name : ''}`,
+        `${formData.next_of_kin_1_email ? formData.next_of_kin_1_email : ''}`,
+        `${formData.next_of_kin_1_phone ? formData.next_of_kin_1_phone : ''}`,
+        `${formData.next_of_kin_1_relationship ? formData.next_of_kin_1_relationship : ''}`,
+        `${formData.next_of_kin_1_street_address ? `${formData.next_of_kin_1_street_address}, ${formData.next_of_kin_1_city}, ${formData.next_of_kin_1_state} ${formData.next_of_kin_1_zip_code}` : ''}`,
+        `${formData.next_of_kin_2_full_name ? formData.next_of_kin_2_full_name : ''}`,
+        `${formData.next_of_kin_2_email ? formData.next_of_kin_2_email : ''}`,
+        `${formData.next_of_kin_2_phone ? formData.next_of_kin_2_phone : ''}`,
+        `${formData.next_of_kin_2_relationship ? formData.next_of_kin_2_relationship : ''}`,
+        `${formData.next_of_kin_2_street_address ? `${formData.next_of_kin_2_street_address}, ${formData.next_of_kin_2_city}, ${formData.next_of_kin_2_state} ${formData.next_of_kin_2_zip_code}` : ''}`,
+        `${formData.next_of_kin_3_full_name ? formData.next_of_kin_3_full_name : ''}`,
+        `${formData.next_of_kin_3_email ? formData.next_of_kin_3_email : ''}`,
+        `${formData.next_of_kin_3_phone ? formData.next_of_kin_3_phone : ''}`,
+        `${formData.next_of_kin_3_relationship ? formData.next_of_kin_3_relationship : ''}`,
+        `${formData.next_of_kin_3_street_address ? `${formData.next_of_kin_3_street_address}, ${formData.next_of_kin_3_city}, ${formData.next_of_kin_3_state} ${formData.next_of_kin_3_zip_code}` : ''}`,
+        `${formData.next_of_kin_4_full_name ? formData.next_of_kin_4_full_name : ''}`,
+        `${formData.next_of_kin_4_email ? formData.next_of_kin_4_email : ''}`,
+        `${formData.next_of_kin_4_phone ? formData.next_of_kin_4_phone : ''}`,
+        `${formData.next_of_kin_4_relationship ? formData.next_of_kin_4_relationship : ''}`,
+        `${formData.next_of_kin_4_street_address ? `${formData.next_of_kin_4_street_address}, ${formData.next_of_kin_4_city}, ${formData.next_of_kin_4_state} ${formData.next_of_kin_4_zip_code}` : ''}`,
+        formData.delivery_method,
+        `${formData.shipping_address ? formData.shipping_address : ''}`,
+        formData.total_before_tax,
+        formData.sales_tax,
+        formData.total_order
+      ]
+    ];
+
+    const resource = {
+      values,
+    }
+
+    try {
+      const results = await service.spreadsheets.values.update({
+        spreadsheetId,
+        range,
+        valueInputOption,
+        resource
+      });
+
+      if (!results.ok) {
+        res.json({message: 'There was an issue sending data to Google Sheets', data: results});
+      }
+
+      return results;
+    } catch (error) {
+      res.json({message: 'There was an issue sending data to Google Sheets', data: error.message || error});
+    }
+  }
+
+  const googleSheetsData = await sendToGoogleSheet();
+
+  let nokCount = 0;
+
+  if (formData.service_package_type === "Immediate Need") {
+    let unusedRoleIndices = [2, 3, 4, 5, 6];
+    Object.keys(formData).forEach(key => {
+      switch (key) {
+        case "next_of_kin_0_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 2);
+          break;
+        case "next_of_kin_1_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 3);
+          break;
+        case "next_of_kin_2_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 4);
+          break;
+        case "next_of_kin_3_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 5);
+          break;
+        case "next_of_kin_4_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 6);
+          break;
+        default:
+          break;
+      }
+    });
+
+    const nokPrefills = [];
+    for (let i = 0; i < nokCount; i++) {
+      const prefillData = {
+        "RoleIndex": i + 2,
+        "SignerName": formData[`next_of_kin_${i}_full_name`],
+        "SignerOrder": i + 2,
+        "SignerEmail": formData[`next_of_kin_${i}_email`],
+        "SignerType": "Signer",
+        "ExistingFormFields": [
+          {
+            "Id": `nextofkin_relationship_${i}`,
+            "Value": formData[`next_of_kin_${i}_relationship`]
+          }
+        ]
+      };
+      nokPrefills.push(prefillData);
+    }
+
+    const body = `{
+      "Roles": [
+        {
+          "RoleIndex": 1,
+          "SignerName": "${formData.contact_first_name}",
+          "SignerOrder": 1,
+          "SignerEmail": "${formData.contact_email}",
+          "SignerType": "Signer",
+          "ExistingFormFields": [
+            {
+              "Id": "service_type",
+              "Value": "${formData.service_package_type}"
+            },
+            {
+              "Id": "service_package",
+              "Value": "${formData.service_package_package_name}"
+            },
+            {
+              "Id": "service_package_price",
+              "Value": "$${formData.service_package_price}"
+            },
+            {
+              "Id": "urn_title",
+              "Value": "${formData.urn_quantity > 0 ? `${formData.urn_title} x ${formData.urn_quantity}` : ''}"
+            },
+            {
+              "Id": "urn_details",
+              "Value": "${urnDetails ? `${urnDetails.length > 0 ? urnDetails[0] : ''}
+      ${urnDetails.length > 1 ? urnDetails[1] : ''}   ${urnDetails.length > 2 ? urnDetails[2] : ''}
+      ${urnDetails.length > 3 ? urnDetails[3] : ''}   ${urnDetails.length > 4 ? urnDetails[4] : ''}` : ''}"
+            },
+            {
+              "Id": "urn_price",
+              "Value": "${formData.urn_price ? `$${formData.urn_price}` : ''}"
+            },
+            {
+              "Id": "merchandise_title_0",
+              "Value": "${formData.merchandise_0_title ? `${formData.merchandise_0_title} x ${formData.merchandise_0_quantity}` : ''}"
+            },
+            {
+              "Id": "merchandise_details_0",
+              "Value": "${merchandiseDetails0 ? `${merchandiseDetails0.length > 0 ? merchandiseDetails0[0] : ''}
+      ${merchandiseDetails0.length > 1 ? merchandiseDetails0[1] : ''}   ${merchandiseDetails0.length > 2 ? merchandiseDetails0[2] : ''}
+      ${merchandiseDetails0.length > 3 ? merchandiseDetails0[3] : ''}   ${merchandiseDetails0.length > 4 ? merchandiseDetails0[4] : ''}` : ''}"
+            },
+            {
+              "Id": "merchandise_price_0",
+              "Value": "${formData.merchandise_0_total ? `$${formData.merchandise_0_total}` : ''}"
+            },
+            {
+              "Id": "merchandise_title_1",
+              "Value": "${formData.merchandise_1_title ? `${formData.merchandise_1_title} x ${formData.merchandise_1_quantity}` : ''}"
+            },
+            {
+              "Id": "merchandise_details_1",
+              "Value": "${merchandiseDetails1 ? `${merchandiseDetails1.length > 0 ? merchandiseDetails1[0] : ''}
+      ${merchandiseDetails1.length > 1 ? merchandiseDetails1[1] : ''}   ${merchandiseDetails1.length > 2 ? merchandiseDetails1[2] : ''}
+      ${merchandiseDetails1.length > 3 ? merchandiseDetails1[3] : ''}   ${merchandiseDetails1.length > 4 ? merchandiseDetails1[4] : ''}` : ''}"
+            },
+            {
+              "Id": "merchandise_price_1",
+              "Value": "${formData.merchandise_1_total ? `$${formData.merchandise_1_total}` : ''}"
+            },
+            {
+              "Id": "merchandise_title_2",
+              "Value": "${formData.merchandise_2_title ? `${formData.merchandise_2_title} x ${formData.merchandise_2_quantity}` : ''}"
+            },
+            {
+              "Id": "merchandise_details_2",
+              "Value": "${merchandiseDetails2 ? `${merchandiseDetails2.length > 0 ? merchandiseDetails2[0] : ''}
+      ${merchandiseDetails2.length > 1 ? merchandiseDetails2[1] : ''}   ${merchandiseDetails2.length > 2 ? merchandiseDetails2[2] : ''}
+      ${merchandiseDetails2.length > 3 ? merchandiseDetails2[3] : ''}   ${merchandiseDetails2.length > 4 ? merchandiseDetails2[4] : ''}` : ''}"
+            },
+            {
+              "Id": "merchandise_price_2",
+              "Value": "${formData.merchandise_2_total ? `$${formData.merchandise_2_total}` : ''}"
+            },
+            {
+              "Id": "merchandise_title_3",
+              "Value": "${formData.merchandise_3_title ? `${formData.merchandise_3_title} x ${formData.merchandise_3_quantity}` : ''}"
+            },
+            {
+              "Id": "merchandise_details_3",
+              "Value": "${merchandiseDetails3 ? `${merchandiseDetails3.length > 0 ? merchandiseDetails3[0] : ''}
+      ${merchandiseDetails3.length > 1 ? merchandiseDetails3[1] : ''}   ${merchandiseDetails3.length > 2 ? merchandiseDetails3[2] : ''}
+      ${merchandiseDetails3.length > 3 ? merchandiseDetails3[3] : ''}   ${merchandiseDetails3.length > 4 ? merchandiseDetails3[4] : ''}` : ''}"
+            },
+            {
+              "Id": "merchandise_price_3",
+              "Value": "${formData.merchandise_3_total ? `$${formData.merchandise_3_total}` : ''}"
+            },
+            {
+              "Id": "witness_price",
+              "Value": "${witnessCremation}"
+            },
+            {
+              "Id": "private_viewing_price", 
+              "Value": "$${formData.private_family_viewing_total}"
+            },
+            {
+              "Id": "transfer_price",
+              "Value": "$${formData.transfer_fee_price}"
+            },
+            {
+              "Id": "death_certificate_qty", 
+              "Value": "${formData.death_certificates_quantity}"
+            },
+            {
+              "Id": "death_certificate_price",
+              "Value": "$${formData.death_certificates_total}"
+            },
+            {
+              "Id": "shipping",
+              "Value": "$${formData.shipping}"
+            },
+            {
+              "Id": "total_before_tax",
+              "Value": "$${formData.total_before_tax}"
+            },
+            {
+              "Id": "sale_tax",
+              "Value": "$${formData.sales_tax}"
+            },
+            {
+              "Id": "total",
+              "Value": "$${formData.total_order}"
+            },
+            {
+              "Id": "purchaser_first_name",
+              "Value": "${formData.purchaser_first_name}"
+            },
+            {
+              "Id": "purchaser_middle_name",
+              "Value": "${formData.purchaser_middle_name}"
+            },
+            {
+              "Id": "purchaser_last_name",
+              "Value": "${formData.purchaser_last_name}"
+            },
+            {
+              "Id": "purchaser_suffix",
+              "Value": "${formData.purchaser_suffix}"
+            },
+            {
+              "Id": "purchaser_relationship",
+              "Value": "${formData.purchaser_relationship}"
+            },
+            {
+              "Id": "purchaser_phone",
+              "Value": "${formData.purchaser_phone}"
+            },
+            {
+              "Id": "purchaser_address",
+              "Value": "${formData.purchaser_street_address}, ${formData.purchaser_city}, ${formData.purchaser_state} ${formData.purchaser_zip_code}"
+            },
+            {
+              "Id": "purchaser_email",
+              "Value": "${formData.purchaser_email}"
+            },
+            {
+              "Id": "deceased_first_name",
+              "Value": "${formData.deceased_first_name}"
+            },
+            {
+              "Id": "deceased_middle_name",
+              "Value": "${formData.deceased_middle_name}"
+            },
+            {
+              "Id": "deceased_last_name",
+              "Value": "${formData.deceased_last_name}"
+            },
+            {
+              "Id": "deceased_suffix",
+              "Value": "${formData.deceased_suffix}"
+            },
+            {
+              "Id": "deceased_gender",
+              "Value": "${formData.deceased_gender}"
+            },
+            {
+              "Id": "deceased_age",
+              "Value": "${formData.deceased_age}"
+            },
+            {
+              "Id": "deceased_birth",
+              "Value": "${formData.deceased_date_birth}"
+            },
+            {
+              "Id": "deceased_death",
+              "Value": "${formData.deceased_date_death}"
+            },
+            {
+              "Id": "deceased_address",
+              "Value": "${formData.deceased_street_address}, ${formData.deceased_city}, ${formData.deceased_state} ${formData.deceased_zip_code}"
+            },
+            {
+              "Id": "pickuplocation",
+              "Value": "${formData.pick_up_location_facility_name != '' ? `${formData.pick_up_location_facility_name} ` : ''}(${formData.pick_up_location_location_type}) ${formData.pick_up_location_street_address}, ${formData.pick_up_location_city}, ${formData.pick_up_location_state} ${formData.pick_up_location_zip_code}"
+            },
+            {
+              "Id": "license",
+              "Value": "${formData.license}"
+            },
+            {
+              "Id": "contact_full_name",
+              "Value": "${formData.contact_first_name}${formData.contact_middle_name != '' ? ` ${formData.contact_middle_name}` : ''} ${formData.contact_last_name}${formData.contact_suffix != '' ? ` ${formData.contact_suffix}` : ''}"
+            },
+            {
+              "Id": "contact_phone",
+              "Value": "${formData.contact_phone}"
+            },
+            {
+              "Id": "contact_email",
+              "Value": "${formData.contact_email}"
+            },
+            {
+              "Id": "contact_address",
+              "Value": "${formData.contact_street_address}, ${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
+            },
+            {
+              "Id": "nextofkin_name_0",
+              "Value": "${formData.next_of_kin_0_full_name || ''}"
+            },
+            {
+              "Id": "nextofkin_phone_0",
+              "Value": "${formData.next_of_kin_0_phone || ''}"
+            },
+            {
+              "Id": "nextofkin_email_0",
+              "Value": "${formData.next_of_kin_0_email || ''}"
+            },
+            {
+              "Id": "nextofkin_address_0",
+              "Value": "${formData.next_of_kin_0_street_address ? `${formData.next_of_kin_0_street_address}, ${formData.next_of_kin_0_city}, ${formData.next_of_kin_0_state} ${formData.next_of_kin_0_zip_code}` : ''}"
+            },
+            {
+              "Id": "nextofkin_name_1",
+              "Value": "${formData.next_of_kin_1_full_name || ''}"
+            },
+            {
+              "Id": "nextofkin_phone_1",
+              "Value": "${formData.next_of_kin_1_phone || ''}"
+            },
+            {
+              "Id": "nextofkin_email_1",
+              "Value": "${formData.next_of_kin_1_email || ''}"
+            },
+            {
+              "Id": "nextofkin_address_1",
+              "Value": "${formData.next_of_kin_1_street_address ? `${formData.next_of_kin_1_street_address}, ${formData.next_of_kin_1_city}, ${formData.next_of_kin_1_state} ${formData.next_of_kin_1_zip_code}` : ''}"
+            },
+            {
+              "Id": "nextofkin_name_2",
+              "Value": "${formData.next_of_kin_2_full_name || ''}"
+            },
+            {
+              "Id": "nextofkin_phone_2",
+              "Value": "${formData.next_of_kin_2_phone || ''}"
+            },
+            {
+              "Id": "nextofkin_email_2", 
+              "Value": "${formData.next_of_kin_2_email || ''}"
+            },
+            {
+              "Id": "nextofkin_address_2",
+              "Value": "${formData.next_of_kin_2_street_address ? `${formData.next_of_kin_2_street_address}, ${formData.next_of_kin_2_city}, ${formData.next_of_kin_2_state} ${formData.next_of_kin_2_zip_code}` : ''}"
+            },
+            {
+              "Id": "nextofkin_name_3",
+              "Value": "${formData.next_of_kin_3_full_name || ''}"
+            },
+            {
+              "Id": "nextofkin_phone_3",
+              "Value": "${formData.next_of_kin_3_phone || ''}"
+            },
+            {
+              "Id": "nextofkin_email_3",
+              "Value": "${formData.next_of_kin_3_email || ''}"
+            },
+            {
+              "Id": "nextofkin_address_3",
+              "Value": "${formData.next_of_kin_3_street_address ? `${formData.next_of_kin_3_street_address}, ${formData.next_of_kin_3_city}, ${formData.next_of_kin_3_state} ${formData.next_of_kin_3_zip_code}` : ''}"
+            },
+            {
+              "Id": "nextofkin_name_4",
+              "Value": "${formData.next_of_kin_4_full_name || ''}"
+            },
+            {
+              "Id": "nextofkin_phone_4",
+              "Value": "${formData.next_of_kin_4_phone || ''}"
+            },
+            {
+              "Id": "nextofkin_email_4",
+              "Value": "${formData.next_of_kin_4_email || ''}"
+            },
+            {
+              "Id": "nextofkin_address_4",
+              "Value": "${formData.next_of_kin_4_street_address ? `${formData.next_of_kin_4_street_address}, ${formData.next_of_kin_4_city}, ${formData.next_of_kin_4_state} ${formData.next_of_kin_4_zip_code}` : ''}"
+            },
+            {
+              "Id": "deceased_gender_1",
+              "Value": "${formData.deceased_gender}"
+            },
+            {
+              "Id": "deceased_ssn",
+              "Value": "${formData.deceased_social_security_number}"
+            },
+            {
+              "Id": "deceased_place_of_death",
+              "Value": "${formData.place_of_passing_city}, ${formData.place_of_passing_state}"
+            },
+            {
+              "Id": "deceased_street_address",
+              "Value": "${formData.deceased_street_address}"
+            },
+            {
+              "Id": "deceased_city",
+              "Value": "${formData.deceased_city}"
+            },
+            {
+              "Id": "deceased_state",
+              "Value": "${formData.deceased_state}"
+            },
+            {
+              "Id": "deceased_zip",
+              "Value": "${formData.deceased_zip_code}"
+            },
+            {
+              "Id": "contact_street_address",
+              "Value": "${formData.contact_street_address}"
+            },
+            {
+              "Id": "contact_city_state_zip",
+              "Value": "${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
+            },
+            {
+              "Id": "contact_relationship",
+              "Value": "${formData.contact_relationship}"
+            },
+            {
+              "Id": "deceased_full_name",
+              "Value": "${formData.deceased_first_name}${formData.deceased_middle_name != '' ? ` ${formData.deceased_middle_name}` : ''} ${formData.deceased_last_name}${formData.deceased_suffix != '' ? ` ${formData.deceased_suffix}` : ''}"
+            },
+            {
+              "Id": "deceased_gender_2",
+              "Value": "${formData.deceased_gender}"
+            },
+            {
+              "Id": "shipping_check",
+              "Value": "${formData.delivery_method}
+            }${formData.delivery_method === 'Delivery' ? `,
+            {
+              "Id": "shipping_address",
+              "Value": "${formData.shipping_address}"
+            }` : ''}
+          ]
+        },
+        ${nokPrefills.length > 0 ? `${nokPrefills.map(role => JSON.stringify(role))},` : ''}{
+          "RoleIndex": ${2 + nokCount},
+          "SignerName": "Magnolia Cremations",
+          "SignerOrder": ${2 + nokCount},
+          "SignerEmail": "orders@magnoliacremations.com",
+          "SignerType": "Signer",
+          "ExistingFormFields": [
+            {
+              "Id": "deceased_death_2",
+              "Value": "${formData.deceased_date_death}"
+            },
+            {
+              "Id": "deceased_place_of_death_full",
+              "Value": "${formData.place_of_passing_facility_name != '' ? `${formData.place_of_passing_facility_name} ` : ''}(${formData.place_of_passing_location_type}) ${formData.place_of_passing_street_address}, ${formData.place_of_passing_city}, ${formData.place_of_passing_state} ${formData.place_of_passing_zip_code}"
+            }
+          ]
+        }
+      ],
+      "RoleRemovalIndices": [${unusedRoleIndices}]
+    }`;
+    
+    if (liability) {
+      try {
+        const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=8bcbdc10-3630-4a14-8884-1b96480ca07c", {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "X-API-KEY": boldSignApiKey,
+            "Content-Type": "application/json"
+          },
+          body: body
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
+        }
+
+        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+      } catch (error) {
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+      }
+    } else {
+      try {
+        const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=a49e2fce-576f-4198-a31e-c41acb80e60e", {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "X-API-KEY": boldSignApiKey,
+            "Content-Type": "application/json"
+          },
+          body: body
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
+        }
+
+        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+      } catch (error) {
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+      }
+    }
+  } else if (formData.service_package_type === "Passing Soon") {
+    const sgsAndVitalBody = `{
+      "Roles": [
+        {
+          "RoleIndex": 1,
+          "SignerName": "${formData.contact_first_name}",
+          "SignerOrder": 1,
+          "SignerEmail": "${formData.contact_email}",
+          "SignerType": "Signer",
+          "ExistingFormFields": [
+            {
+              "Id": "service_type",
+              "Value": "${formData.service_package_type}"
+            },
+            {
+              "Id": "service_package",
+              "Value": "${formData.service_package_package_name}"
+            },
+            {
+              "Id": "service_package_price",
+              "Value": "$${formData.service_package_price}"
+            },
+            {
+              "Id": "urn_title",
+              "Value": "${formData.urn_quantity > 0 ? `${formData.urn_title} x ${formData.urn_quantity}` : ''}"
+            },
+            {
+              "Id": "urn_details",
+              "Value": "${urnDetails ? `${urnDetails.length > 0 ? urnDetails[0] : ''}
+      ${urnDetails.length > 1 ? urnDetails[1] : ''}   ${urnDetails.length > 2 ? urnDetails[2] : ''}
+      ${urnDetails.length > 3 ? urnDetails[3] : ''}   ${urnDetails.length > 4 ? urnDetails[4] : ''}` : ''}"
+            },
+            {
+              "Id": "urn_price",
+              "Value": "${formData.urn_price ? `$${formData.urn_price}` : ''}"
+            },
+            {
+              "Id": "merchandise_title_0",
+              "Value": "${formData.merchandise_0_title ? `${formData.merchandise_0_title} x ${formData.merchandise_0_quantity}` : ''}"
+            },
+            {
+              "Id": "merchandise_details_0",
+              "Value": "${merchandiseDetails0 ? `${merchandiseDetails0.length > 0 ? merchandiseDetails0[0] : ''}
+      ${merchandiseDetails0.length > 1 ? merchandiseDetails0[1] : ''}   ${merchandiseDetails0.length > 2 ? merchandiseDetails0[2] : ''}
+      ${merchandiseDetails0.length > 3 ? merchandiseDetails0[3] : ''}   ${merchandiseDetails0.length > 4 ? merchandiseDetails0[4] : ''}` : ''}"
+            },
+            {
+              "Id": "merchandise_price_0",
+              "Value": "${formData.merchandise_0_total ? `$${formData.merchandise_0_total}` : ''}"
+            },
+            {
+              "Id": "merchandise_title_1",
+              "Value": "${formData.merchandise_1_title ? `${formData.merchandise_1_title} x ${formData.merchandise_1_quantity}` : ''}"
+            },
+            {
+              "Id": "merchandise_details_1",
+              "Value": "${merchandiseDetails1 ? `${merchandiseDetails1.length > 0 ? merchandiseDetails1[0] : ''}
+      ${merchandiseDetails1.length > 1 ? merchandiseDetails1[1] : ''}   ${merchandiseDetails1.length > 2 ? merchandiseDetails1[2] : ''}
+      ${merchandiseDetails1.length > 3 ? merchandiseDetails1[3] : ''}   ${merchandiseDetails1.length > 4 ? merchandiseDetails1[4] : ''}` : ''}"
+            },
+            {
+              "Id": "merchandise_price_1",
+              "Value": "${formData.merchandise_1_total ? `$${formData.merchandise_1_total}` : ''}"
+            },
+            {
+              "Id": "merchandise_title_2",
+              "Value": "${formData.merchandise_2_title ? `${formData.merchandise_2_title} x ${formData.merchandise_2_quantity}` : ''}"
+            },
+            {
+              "Id": "merchandise_details_2",
+              "Value": "${merchandiseDetails2 ? `${merchandiseDetails2.length > 0 ? merchandiseDetails2[0] : ''}
+      ${merchandiseDetails2.length > 1 ? merchandiseDetails2[1] : ''}   ${merchandiseDetails2.length > 2 ? merchandiseDetails2[2] : ''}
+      ${merchandiseDetails2.length > 3 ? merchandiseDetails2[3] : ''}   ${merchandiseDetails2.length > 4 ? merchandiseDetails2[4] : ''}` : ''}"
+            },
+            {
+              "Id": "merchandise_price_2",
+              "Value": "${formData.merchandise_2_total ? `$${formData.merchandise_2_total}` : ''}"
+            },
+            {
+              "Id": "merchandise_title_3",
+              "Value": "${formData.merchandise_3_title ? `${formData.merchandise_3_title} x ${formData.merchandise_3_quantity}` : ''}"
+            },
+            {
+              "Id": "merchandise_details_3",
+              "Value": "${merchandiseDetails3 ? `${merchandiseDetails3.length > 0 ? merchandiseDetails3[0] : ''}
+      ${merchandiseDetails3.length > 1 ? merchandiseDetails3[1] : ''}   ${merchandiseDetails3.length > 2 ? merchandiseDetails3[2] : ''}
+      ${merchandiseDetails3.length > 3 ? merchandiseDetails3[3] : ''}   ${merchandiseDetails3.length > 4 ? merchandiseDetails3[4] : ''}` : ''}"
+            },
+            {
+              "Id": "merchandise_price_3",
+              "Value": "${formData.merchandise_3_total ? `$${formData.merchandise_3_total}` : ''}"
+            },
+            {
+              "Id": "witness_price",
+              "Value": "${witnessCremation}"
+            },
+            {
+              "Id": "private_viewing_price", 
+              "Value": "$${formData.private_family_viewing_total}"
+            },
+            {
+              "Id": "transfer_price",
+              "Value": "$${formData.transfer_fee_price}"
+            },
+            {
+              "Id": "death_certificate_qty", 
+              "Value": "${formData.death_certificates_quantity}"
+            },
+            {
+              "Id": "death_certificate_price",
+              "Value": "$${formData.death_certificates_total}"
+            },
+            {
+              "Id": "shipping",
+              "Value": "$${formData.shipping}"
+            },
+            {
+              "Id": "total_before_tax",
+              "Value": "$${formData.total_before_tax}"
+            },
+            {
+              "Id": "sale_tax",
+              "Value": "$${formData.sales_tax}"
+            },
+            {
+              "Id": "total",
+              "Value": "$${formData.total_order}"
+            },
+            {
+              "Id": "purchaser_first_name",
+              "Value": "${formData.purchaser_first_name}"
+            },
+            {
+              "Id": "purchaser_middle_name",
+              "Value": "${formData.purchaser_middle_name}"
+            },
+            {
+              "Id": "purchaser_last_name",
+              "Value": "${formData.purchaser_last_name}"
+            },
+            {
+              "Id": "purchaser_suffix",
+              "Value": "${formData.purchaser_suffix}"
+            },
+            {
+              "Id": "purchaser_relationship",
+              "Value": "${formData.purchaser_relationship}"
+            },
+            {
+              "Id": "purchaser_phone",
+              "Value": "${formData.purchaser_phone}"
+            },
+            {
+              "Id": "purchaser_address",
+              "Value": "${formData.purchaser_street_address}, ${formData.purchaser_city}, ${formData.purchaser_state} ${formData.purchaser_zip_code}"
+            },
+            {
+              "Id": "purchaser_email",
+              "Value": "${formData.purchaser_email}"
+            },
+            {
+              "Id": "deceased_first_name",
+              "Value": "${formData.deceased_first_name}"
+            },
+            {
+              "Id": "deceased_middle_name",
+              "Value": "${formData.deceased_middle_name}"
+            },
+            {
+              "Id": "deceased_last_name",
+              "Value": "${formData.deceased_last_name}"
+            },
+            {
+              "Id": "deceased_suffix",
+              "Value": "${formData.deceased_suffix}"
+            },
+            {
+              "Id": "deceased_gender",
+              "Value": "${formData.deceased_gender}"
+            },
+            {
+              "Id": "deceased_birth",
+              "Value": "${formData.deceased_date_birth}"
+            },
+            {
+              "Id": "deceased_address",
+              "Value": "${formData.deceased_street_address}, ${formData.deceased_city}, ${formData.deceased_state} ${formData.deceased_zip_code}"
+            },
+            {
+              "Id": "pickuplocation",
+              "Value": "${formData.pick_up_location_facility_name != '' ? `${formData.pick_up_location_facility_name} ` : ''}(${formData.pick_up_location_location_type}) ${formData.pick_up_location_street_address}, ${formData.pick_up_location_city}, ${formData.pick_up_location_state} ${formData.pick_up_location_zip_code}"
+            },
+            {
+              "Id": "license",
+              "Value": "${formData.license}"
+            },
+            {
+              "Id": "contact_full_name",
+              "Value": "${formData.contact_first_name}${formData.contact_middle_name != '' ? ` ${formData.contact_middle_name}` : ''} ${formData.contact_last_name}${formData.contact_suffix != '' ? ` ${formData.contact_suffix}` : ''}"
+            },
+            {
+              "Id": "contact_phone",
+              "Value": "${formData.contact_phone}"
+            },
+            {
+              "Id": "contact_email",
+              "Value": "${formData.contact_email}"
+            },
+            {
+              "Id": "contact_address",
+              "Value": "${formData.contact_street_address}, ${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
+            },
+            {
+              "Id": "nextofkin_name_0",
+              "Value": "${formData.next_of_kin_0_full_name || ''}"
+            },
+            {
+              "Id": "nextofkin_phone_0",
+              "Value": "${formData.next_of_kin_0_phone || ''}"
+            },
+            {
+              "Id": "nextofkin_email_0",
+              "Value": "${formData.next_of_kin_0_email || ''}"
+            },
+            {
+              "Id": "nextofkin_address_0",
+              "Value": "${formData.next_of_kin_0_street_address ? `${formData.next_of_kin_0_street_address}, ${formData.next_of_kin_0_city}, ${formData.next_of_kin_0_state} ${formData.next_of_kin_0_zip_code}` : ''}"
+            },
+            {
+              "Id": "nextofkin_name_1",
+              "Value": "${formData.next_of_kin_1_full_name || ''}"
+            },
+            {
+              "Id": "nextofkin_phone_1",
+              "Value": "${formData.next_of_kin_1_phone || ''}"
+            },
+            {
+              "Id": "nextofkin_email_1",
+              "Value": "${formData.next_of_kin_1_email || ''}"
+            },
+            {
+              "Id": "nextofkin_address_1",
+              "Value": "${formData.next_of_kin_1_street_address ? `${formData.next_of_kin_1_street_address}, ${formData.next_of_kin_1_city}, ${formData.next_of_kin_1_state} ${formData.next_of_kin_1_zip_code}` : ''}"
+            },
+            {
+              "Id": "nextofkin_name_2",
+              "Value": "${formData.next_of_kin_2_full_name || ''}"
+            },
+            {
+              "Id": "nextofkin_phone_2",
+              "Value": "${formData.next_of_kin_2_phone || ''}"
+            },
+            {
+              "Id": "nextofkin_email_2", 
+              "Value": "${formData.next_of_kin_2_email || ''}"
+            },
+            {
+              "Id": "nextofkin_address_2",
+              "Value": "${formData.next_of_kin_2_street_address ? `${formData.next_of_kin_2_street_address}, ${formData.next_of_kin_2_city}, ${formData.next_of_kin_2_state} ${formData.next_of_kin_2_zip_code}` : ''}"
+            },
+            {
+              "Id": "nextofkin_name_3",
+              "Value": "${formData.next_of_kin_3_full_name || ''}"
+            },
+            {
+              "Id": "nextofkin_phone_3",
+              "Value": "${formData.next_of_kin_3_phone || ''}"
+            },
+            {
+              "Id": "nextofkin_email_3",
+              "Value": "${formData.next_of_kin_3_email || ''}"
+            },
+            {
+              "Id": "nextofkin_address_3",
+              "Value": "${formData.next_of_kin_3_street_address ? `${formData.next_of_kin_3_street_address}, ${formData.next_of_kin_3_city}, ${formData.next_of_kin_3_state} ${formData.next_of_kin_3_zip_code}` : ''}"
+            },
+            {
+              "Id": "nextofkin_name_4",
+              "Value": "${formData.next_of_kin_4_full_name || ''}"
+            },
+            {
+              "Id": "nextofkin_phone_4",
+              "Value": "${formData.next_of_kin_4_phone || ''}"
+            },
+            {
+              "Id": "nextofkin_email_4",
+              "Value": "${formData.next_of_kin_4_email || ''}"
+            },
+            {
+              "Id": "nextofkin_address_4",
+              "Value": "${formData.next_of_kin_4_street_address ? `${formData.next_of_kin_4_street_address}, ${formData.next_of_kin_4_city}, ${formData.next_of_kin_4_state} ${formData.next_of_kin_4_zip_code}` : ''}"
+            },
+            {
+              "Id": "deceased_gender_1",
+              "Value": "${formData.deceased_gender}"
+            },
+            {
+              "Id": "deceased_ssn",
+              "Value": "${formData.deceased_social_security_number}"
+            },
+            {
+              "Id": "deceased_street_address",
+              "Value": "${formData.deceased_street_address}"
+            },
+            {
+              "Id": "deceased_city",
+              "Value": "${formData.deceased_city}"
+            },
+            {
+              "Id": "deceased_state",
+              "Value": "${formData.deceased_state}"
+            },
+            {
+              "Id": "deceased_zip",
+              "Value": "${formData.deceased_zip_code}"
+            },
+            {
+              "Id": "contact_street_address",
+              "Value": "${formData.contact_street_address}"
+            },
+            {
+              "Id": "contact_city_state_zip",
+              "Value": "${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
+            },
+            {
+              "Id": "contact_relationship",
+              "Value": "${formData.contact_relationship}"
+            }${liability ? `,
+              {
+                "Id": "deceased_full_name",
+                "Value": "${formData.deceased_first_name}${formData.deceased_middle_name != '' ? ` ${formData.deceased_middle_name}` : ''} ${formData.deceased_last_name}${formData.deceased_suffix != '' ? ` ${formData.deceased_suffix}` : ''}"
+              }` : ''}
+          ]
+        }
+      ]
+    }`;
+
+    let unusedRoleIndices = [3, 4, 5, 6, 7];
+    Object.keys(formData).forEach(key => {
+      switch (key) {
+        case "next_of_kin_0_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 3);
+          break;
+        case "next_of_kin_1_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 4);
+          break;
+        case "next_of_kin_2_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 5);
+          break;
+        case "next_of_kin_3_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 6);
+          break;
+        case "next_of_kin_4_email":
+          nokCount++;
+          unusedRoleIndices = unusedRoleIndices.filter(index => index != 7);
+          break;
+        default:
+          break;
+      }
+    });
+
+    const nokPrefills = [];
+    for (let i = 0; i < nokCount; i++) {
+      const prefillData = {
+        "RoleIndex": i + 3,
+        "SignerName": formData[`next_of_kin_${i}_full_name`],
+        "SignerOrder": i + 3,
+        "SignerEmail": formData[`next_of_kin_${i}_email`],
+        "SignerType": "Signer",
+        "ExistingFormFields": [
+          {
+            "Id": `nextofkin_name_${i}`,
+            "Value": formData[`next_of_kin_${i}_full_name`]
+          },
+          {
+            "Id": `nextofkin_relationship_${i}`,
+            "Value": formData[`next_of_kin_${i}_relationship`]
+          }
+        ]
+      };
+      nokPrefills.push(prefillData);
+    }
+
+    const cremAuthBody = `{
+      "Roles": [
+         {
+          "RoleIndex": 1,
+          "SignerName": "Magnolia Cremations",
+          "SignerOrder": 1,
+          "SignerEmail": "orders@magnoliacremations.com",
+          "SignerType": "Signer"
+        },
+        {
+          "RoleIndex": 2,
+          "SignerName": "${formData.contact_first_name}",
+          "SignerOrder": 2,
+          "SignerEmail": "${formData.contact_email}",
+          "SignerType": "Signer",
+          "ExistingFormFields": [
+            {
+              "Id": "deceased_full_name",
+              "Value": "${formData.deceased_first_name}${formData.deceased_middle_name != '' ? ` ${formData.deceased_middle_name}` : ''} ${formData.deceased_last_name}${formData.deceased_suffix != '' ? ` ${formData.deceased_suffix}` : ''}"
+            },
+            {
+              "Id": "deceased_gender",
+              "Value": "${formData.deceased_gender}"
+            },
+            {
+              "Id": "deceased_birth",
+              "Value": "${formData.deceased_date_birth}"
+            },
+            {
+              "Id": "urn_title",
+              "Value": "${formData.urn_quantity > 0 ? `${formData.urn_title} x ${formData.urn_quantity}` : ''}"
+            },
+            {
+              "Id": "contact_full_name",
+              "Value": "${formData.contact_first_name}${formData.contact_middle_name != '' ? ` ${formData.contact_middle_name}` : ''} ${formData.contact_last_name}${formData.contact_suffix != '' ? ` ${formData.contact_suffix}` : ''}"
+            },
+            {
+              "Id": "contact_relationship",
+              "Value": "${formData.contact_relationship}"
+            },
+            {
+              "Id": "shipping_check",
+              "Value": "${formData.delivery_method}
+            }${formData.delivery_method === 'Delivery' ? `,
+            {
+              "Id": "shipping_address",
+              "Value": "${formData.shipping_address}"
+            }` : ''}
+          ]
+        }${nokPrefills.length > 0 ? `,
+          ${nokPrefills.map(role => JSON.stringify(role))}` : ''}
+      ],
+      "RoleRemovalIndices": [${unusedRoleIndices}]
+    }`;
+
+    if (liability) {
+      try {
+        const sgsAndVitalResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=fca14583-fc27-401a-af74-2e9e8b3f02af", {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "X-API-KEY": boldSignApiKey,
+            "Content-Type": "application/json"
+          },
+          body: sgsAndVitalBody
+        });
+
+        const sgsAndVitalData = await sgsAndVitalResponse.json();
+
+        if (!sgsAndVitalResponse.ok) {
+          return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, google_sheets_data: googleSheetsData});
+        }
+
+        const cremAuthResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=886f8e77-1140-4efb-aab5-c554fbb4f65a", {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "X-API-KEY": boldSignApiKey,
+            "Content-Type": "application/json"
+          },
+          body: cremAuthBody
+        });
+
+        const cremAuthData = await cremAuthResponse.json();
+
+        if (!cremAuthResponse.ok) {
+          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, google_sheets_data: googleSheetsData});
+        }
+
+        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+      } catch (error) {
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+      }
+    } else {
+      try {
+        const sgsAndVitalResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=8c83f1c7-b40f-47d4-a03d-5b530b6bb0ae", {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "X-API-KEY": boldSignApiKey,
+            "Content-Type": "application/json"
+          },
+          body: sgsAndVitalBody
+        });
+
+        const sgsAndVitalData = await sgsAndVitalResponse.json();
+
+        if (!sgsAndVitalResponse.ok) {
+          return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, google_sheets_data: googleSheetsData});
+        }
+
+        const cremAuthResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=23932329-d871-412c-98b6-492d57aabf88", {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "X-API-KEY": boldSignApiKey,
+            "Content-Type": "application/json"
+          },
+          body: cremAuthBody
+        });
+
+        const cremAuthData = await cremAuthResponse.json();
+
+        if (!cremAuthResponse.ok) {
+          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, google_sheets_data: googleSheetsData});
+        }
+
+        res.json({message: 'Forms sent successfully'});
+      } catch (error) {
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+      }
+    }
+  } else if (formData.service_package_type === "Planning Ahead") {
+    if (formData.deceased_state === "Indiana") {
+      const body = `{
+        "Roles": [
+          {
+            "RoleIndex": 1,
+            "SignerName": "${formData.contact_first_name}",
+            "SignerOrder": 1,
+            "SignerEmail": "${formData.contact_email}",
+            "SignerType": "Signer",
+            "ExistingFormFields": [
+              {
+                "Id": "service_type",
+                "Value": "${formData.service_package_type}"
+              },
+              {
+                "Id": "service_package",
+                "Value": "${formData.service_package_package_name}"
+              },
+              {
+                "Id": "service_package_price",
+                "Value": "$${formData.service_package_price}"
+              },
+              {
+                "Id": "urn_title",
+                "Value": "${formData.urn_quantity > 0 ? `${formData.urn_title} x ${formData.urn_quantity}` : ''}"
+              },
+              {
+                "Id": "urn_details",
+                "Value": "${urnDetails ? `${urnDetails.length > 0 ? urnDetails[0] : ''}
+        ${urnDetails.length > 1 ? urnDetails[1] : ''}   ${urnDetails.length > 2 ? urnDetails[2] : ''}
+        ${urnDetails.length > 3 ? urnDetails[3] : ''}   ${urnDetails.length > 4 ? urnDetails[4] : ''}` : ''}"
+              },
+              {
+                "Id": "urn_price",
+                "Value": "${formData.urn_price ? `$${formData.urn_price}` : ''}"
+              },
+              {
+                "Id": "merchandise_title_0",
+                "Value": "${formData.merchandise_0_title ? `${formData.merchandise_0_title} x ${formData.merchandise_0_quantity}` : ''}"
+              },
+              {
+                "Id": "merchandise_details_0",
+                "Value": "${merchandiseDetails0 ? `${merchandiseDetails0.length > 0 ? merchandiseDetails0[0] : ''}
+        ${merchandiseDetails0.length > 1 ? merchandiseDetails0[1] : ''}   ${merchandiseDetails0.length > 2 ? merchandiseDetails0[2] : ''}
+        ${merchandiseDetails0.length > 3 ? merchandiseDetails0[3] : ''}   ${merchandiseDetails0.length > 4 ? merchandiseDetails0[4] : ''}` : ''}"
+              },
+              {
+                "Id": "merchandise_price_0",
+                "Value": "${formData.merchandise_0_total ? `$${formData.merchandise_0_total}` : ''}"
+              },
+              {
+                "Id": "merchandise_title_1",
+                "Value": "${formData.merchandise_1_title ? `${formData.merchandise_1_title} x ${formData.merchandise_1_quantity}` : ''}"
+              },
+              {
+                "Id": "merchandise_details_1",
+                "Value": "${merchandiseDetails1 ? `${merchandiseDetails1.length > 0 ? merchandiseDetails1[0] : ''}
+        ${merchandiseDetails1.length > 1 ? merchandiseDetails1[1] : ''}   ${merchandiseDetails1.length > 2 ? merchandiseDetails1[2] : ''}
+        ${merchandiseDetails1.length > 3 ? merchandiseDetails1[3] : ''}   ${merchandiseDetails1.length > 4 ? merchandiseDetails1[4] : ''}` : ''}"
+              },
+              {
+                "Id": "merchandise_price_1",
+                "Value": "${formData.merchandise_1_total ? `$${formData.merchandise_1_total}` : ''}"
+              },
+              {
+                "Id": "merchandise_title_2",
+                "Value": "${formData.merchandise_2_title ? `${formData.merchandise_2_title} x ${formData.merchandise_2_quantity}` : ''}"
+              },
+              {
+                "Id": "merchandise_details_2",
+                "Value": "${merchandiseDetails2 ? `${merchandiseDetails2.length > 0 ? merchandiseDetails2[0] : ''}
+        ${merchandiseDetails2.length > 1 ? merchandiseDetails2[1] : ''}   ${merchandiseDetails2.length > 2 ? merchandiseDetails2[2] : ''}
+        ${merchandiseDetails2.length > 3 ? merchandiseDetails2[3] : ''}   ${merchandiseDetails2.length > 4 ? merchandiseDetails2[4] : ''}` : ''}"
+              },
+              {
+                "Id": "merchandise_price_2",
+                "Value": "${formData.merchandise_2_total ? `$${formData.merchandise_2_total}` : ''}"
+              },
+              {
+                "Id": "merchandise_title_3",
+                "Value": "${formData.merchandise_3_title ? `${formData.merchandise_3_title} x ${formData.merchandise_3_quantity}` : ''}"
+              },
+              {
+                "Id": "merchandise_details_3",
+                "Value": "${merchandiseDetails3 ? `${merchandiseDetails3.length > 0 ? merchandiseDetails3[0] : ''}
+        ${merchandiseDetails3.length > 1 ? merchandiseDetails3[1] : ''}   ${merchandiseDetails3.length > 2 ? merchandiseDetails3[2] : ''}
+        ${merchandiseDetails3.length > 3 ? merchandiseDetails3[3] : ''}   ${merchandiseDetails3.length > 4 ? merchandiseDetails3[4] : ''}` : ''}"
+              },
+              {
+                "Id": "merchandise_price_3",
+                "Value": "${formData.merchandise_3_total ? `$${formData.merchandise_3_total}` : ''}"
+              },
+              {
+                "Id": "witness_price",
+                "Value": "${witnessCremation}"
+              },
+              {
+                "Id": "private_viewing_price", 
+                "Value": "$${formData.private_family_viewing_total}"
+              },
+              {
+                "Id": "transfer_price",
+                "Value": "$${formData.transfer_fee_price}"
+              },
+              {
+                "Id": "death_certificate_qty", 
+                "Value": "${formData.death_certificates_quantity}"
+              },
+              {
+                "Id": "death_certificate_price",
+                "Value": "$${formData.death_certificates_total}"
+              },
+              {
+                "Id": "shipping",
+                "Value": "$${formData.shipping}"
+              },
+              {
+                "Id": "total_before_tax",
+                "Value": "$${formData.total_before_tax}"
+              },
+              {
+                "Id": "sale_tax",
+                "Value": "$${formData.sales_tax}"
+              },
+              {
+                "Id": "total",
+                "Value": "$${formData.total_order}"
+              },
+              {
+                "Id": "purchaser_first_name",
+                "Value": "${formData.contact_first_name}"
+              },
+              {
+                "Id": "purchaser_middle_name",
+                "Value": "${formData.contact_middle_name}"
+              },
+              {
+                "Id": "purchaser_last_name",
+                "Value": "${formData.contact_last_name}"
+              },
+              {
+                "Id": "purchaser_suffix",
+                "Value": "${formData.contact_suffix}"
+              },
+              {
+                "Id": "purchaser_relationship",
+                "Value": "${formData.contact_relationship}"
+              },
+              {
+                "Id": "purchaser_phone",
+                "Value": "${formData.contact_phone}"
+              },
+              {
+                "Id": "purchaser_address",
+                "Value": "${formData.contact_street_address}, ${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
+              },
+              {
+                "Id": "purchaser_email",
+                "Value": "${formData.contact_email}"
+              },
+              {
+                "Id": "deceased_first_name",
+                "Value": "${formData.deceased_first_name}"
+              },
+              {
+                "Id": "deceased_middle_name",
+                "Value": "${formData.deceased_middle_name}"
+              },
+              {
+                "Id": "deceased_last_name",
+                "Value": "${formData.deceased_last_name}"
+              },
+              {
+                "Id": "deceased_suffix",
+                "Value": "${formData.deceased_suffix}"
+              },
+              {
+                "Id": "deceased_gender",
+                "Value": "${formData.deceased_gender}"
+              },
+              {
+                "Id": "deceased_age",
+                "Value": "${formData.deceased_age}"
+              },
+              {
+                "Id": "deceased_ssn",
+                "Value": "${formData.deceased_social_security_number}"
+              },
+              {
+                "Id": "deceased_birth",
+                "Value": "${formData.deceased_date_birth}"
+              },
+              {
+                "Id": "deceased_address",
+                "Value": "${formData.deceased_street_address}, ${formData.deceased_city}, ${formData.deceased_state} ${formData.deceased_zip_code}"
+              },
+              {
+                "Id": "deceased_phone",
+                "Value": "${formData.deceased_phone}"
+              },
+              {
+                "Id": "deceased_email",
+                "Value": "${formData.deceased_email}"
+              },
+              {
+                "Id": "license",
+                "Value": "${formData.license}"
+              },
+              {
+                "Id": "deceased_full_name",
+                "Value": "${formData.deceased_first_name}${formData.deceased_middle_name != '' ? ` ${formData.deceased_middle_name}` : ''} ${formData.deceased_last_name}${formData.deceased_suffix != '' ? ` ${formData.deceased_suffix}` : ''}"
+              },
+              {
+                "Id": "deceased_gender_1",
+                "Value": "${formData.deceased_gender}"
+              },
+              {
+                "Id": "deceased_street_address",
+                "Value": "${formData.deceased_street_address}"
+              },
+              {
+                "Id": "deceased_city_state_zip",
+                "Value": "${formData.deceased_city}, ${formData.deceased_state} ${formData.deceased_zip_code}"
+              },
+              {
+                "Id": "contact_full_name",
+                "Value": "${formData.contact_first_name}${formData.contact_middle_name != '' ? ` ${formData.contact_middle_name}` : ''} ${formData.contact_last_name}${formData.contact_suffix != '' ? ` ${formData.contact_suffix}` : ''}"
+              },
+              {
+                "Id": "contact_age",
+                "Value": "${formData.contact_age}"
+              },
+              {
+                "Id": "contact_street_address",
+                "Value": "${formData.contact_street_address}"
+              },
+              {
+                "Id": "contact_city_state_zip",
+                "Value": "${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
+              }
+            ]
+          }
+        ]
+      }`;
+
+      try {
+        const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=775c8725-e1f9-47b2-874c-be69e7f51de1", {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "X-API-KEY": boldSignApiKey,
+            "Content-Type": "application/json"
+          },
+          body: body
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
+        }
+
+        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+      } catch (error) {
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+      }
+    } else if (formData.deceased_state === "Kentucky") {
+      if (formData.plan_ahead_person === "Loved One") {
+        const body = `{
+          "Roles": [
+            {
+              "RoleIndex": 1,
+              "SignerName": "${formData.contact_first_name}",
+              "SignerOrder": 1,
+              "SignerEmail": "${formData.contact_email}",
+              "SignerType": "Signer",
+              "ExistingFormFields": [
+                {
+                  "Id": "service_type",
+                  "Value": "${formData.service_package_type}"
+                },
+                {
+                  "Id": "service_package",
+                  "Value": "${formData.service_package_package_name}"
+                },
+                {
+                  "Id": "service_package_price",
+                  "Value": "$${formData.service_package_price}"
+                },
+                {
+                  "Id": "urn_title",
+                  "Value": "${formData.urn_quantity > 0 ? `${formData.urn_title} x ${formData.urn_quantity}` : ''}"
+                },
+                {
+                  "Id": "urn_details",
+                  "Value": "${urnDetails ? `${urnDetails.length > 0 ? urnDetails[0] : ''}
+          ${urnDetails.length > 1 ? urnDetails[1] : ''}   ${urnDetails.length > 2 ? urnDetails[2] : ''}
+          ${urnDetails.length > 3 ? urnDetails[3] : ''}   ${urnDetails.length > 4 ? urnDetails[4] : ''}` : ''}"
+                },
+                {
+                  "Id": "urn_price",
+                  "Value": "${formData.urn_price ? `$${formData.urn_price}` : ''}"
+                },
+                {
+                  "Id": "merchandise_title_0",
+                  "Value": "${formData.merchandise_0_title ? `${formData.merchandise_0_title} x ${formData.merchandise_0_quantity}` : ''}"
+                },
+                {
+                  "Id": "merchandise_details_0",
+                  "Value": "${merchandiseDetails0 ? `${merchandiseDetails0.length > 0 ? merchandiseDetails0[0] : ''}
+          ${merchandiseDetails0.length > 1 ? merchandiseDetails0[1] : ''}   ${merchandiseDetails0.length > 2 ? merchandiseDetails0[2] : ''}
+          ${merchandiseDetails0.length > 3 ? merchandiseDetails0[3] : ''}   ${merchandiseDetails0.length > 4 ? merchandiseDetails0[4] : ''}` : ''}"
+                },
+                {
+                  "Id": "merchandise_price_0",
+                  "Value": "${formData.merchandise_0_total ? `$${formData.merchandise_0_total}` : ''}"
+                },
+                {
+                  "Id": "merchandise_title_1",
+                  "Value": "${formData.merchandise_1_title ? `${formData.merchandise_1_title} x ${formData.merchandise_1_quantity}` : ''}"
+                },
+                {
+                  "Id": "merchandise_details_1",
+                  "Value": "${merchandiseDetails1 ? `${merchandiseDetails1.length > 0 ? merchandiseDetails1[0] : ''}
+          ${merchandiseDetails1.length > 1 ? merchandiseDetails1[1] : ''}   ${merchandiseDetails1.length > 2 ? merchandiseDetails1[2] : ''}
+          ${merchandiseDetails1.length > 3 ? merchandiseDetails1[3] : ''}   ${merchandiseDetails1.length > 4 ? merchandiseDetails1[4] : ''}` : ''}"
+                },
+                {
+                  "Id": "merchandise_price_1",
+                  "Value": "${formData.merchandise_1_total ? `$${formData.merchandise_1_total}` : ''}"
+                },
+                {
+                  "Id": "merchandise_title_2",
+                  "Value": "${formData.merchandise_2_title ? `${formData.merchandise_2_title} x ${formData.merchandise_2_quantity}` : ''}"
+                },
+                {
+                  "Id": "merchandise_details_2",
+                  "Value": "${merchandiseDetails2 ? `${merchandiseDetails2.length > 0 ? merchandiseDetails2[0] : ''}
+          ${merchandiseDetails2.length > 1 ? merchandiseDetails2[1] : ''}   ${merchandiseDetails2.length > 2 ? merchandiseDetails2[2] : ''}
+          ${merchandiseDetails2.length > 3 ? merchandiseDetails2[3] : ''}   ${merchandiseDetails2.length > 4 ? merchandiseDetails2[4] : ''}` : ''}"
+                },
+                {
+                  "Id": "merchandise_price_2",
+                  "Value": "${formData.merchandise_2_total ? `$${formData.merchandise_2_total}` : ''}"
+                },
+                {
+                  "Id": "merchandise_title_3",
+                  "Value": "${formData.merchandise_3_title ? `${formData.merchandise_3_title} x ${formData.merchandise_3_quantity}` : ''}"
+                },
+                {
+                  "Id": "merchandise_details_3",
+                  "Value": "${merchandiseDetails3 ? `${merchandiseDetails3.length > 0 ? merchandiseDetails3[0] : ''}
+          ${merchandiseDetails3.length > 1 ? merchandiseDetails3[1] : ''}   ${merchandiseDetails3.length > 2 ? merchandiseDetails3[2] : ''}
+          ${merchandiseDetails3.length > 3 ? merchandiseDetails3[3] : ''}   ${merchandiseDetails3.length > 4 ? merchandiseDetails3[4] : ''}` : ''}"
+                },
+                {
+                  "Id": "merchandise_price_3",
+                  "Value": "${formData.merchandise_3_total ? `$${formData.merchandise_3_total}` : ''}"
+                },
+                {
+                  "Id": "witness_price",
+                  "Value": "${witnessCremation}"
+                },
+                {
+                  "Id": "private_viewing_price", 
+                  "Value": "$${formData.private_family_viewing_total}"
+                },
+                {
+                  "Id": "transfer_price",
+                  "Value": "$${formData.transfer_fee_price}"
+                },
+                {
+                  "Id": "death_certificate_qty", 
+                  "Value": "${formData.death_certificates_quantity}"
+                },
+                {
+                  "Id": "death_certificate_price",
+                  "Value": "$${formData.death_certificates_total}"
+                },
+                {
+                  "Id": "shipping",
+                  "Value": "$${formData.shipping}"
+                },
+                {
+                  "Id": "total_before_tax",
+                  "Value": "$${formData.total_before_tax}"
+                },
+                {
+                  "Id": "sale_tax",
+                  "Value": "$${formData.sales_tax}"
+                },
+                {
+                  "Id": "total",
+                  "Value": "$${formData.total_order}"
+                },
+                {
+                  "Id": "purchaser_first_name",
+                  "Value": "${formData.contact_first_name}"
+                },
+                {
+                  "Id": "purchaser_middle_name",
+                  "Value": "${formData.contact_middle_name}"
+                },
+                {
+                  "Id": "purchaser_last_name",
+                  "Value": "${formData.contact_last_name}"
+                },
+                {
+                  "Id": "purchaser_suffix",
+                  "Value": "${formData.contact_suffix}"
+                },
+                {
+                  "Id": "purchaser_relationship",
+                  "Value": "${formData.contact_relationship}"
+                },
+                {
+                  "Id": "purchaser_phone",
+                  "Value": "${formData.contact_phone}"
+                },
+                {
+                  "Id": "purchaser_address",
+                  "Value": "${formData.contact_street_address}, ${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
+                },
+                {
+                  "Id": "purchaser_email",
+                  "Value": "${formData.contact_email}"
+                },
+                {
+                  "Id": "deceased_first_name",
+                  "Value": "${formData.deceased_first_name}"
+                },
+                {
+                  "Id": "deceased_middle_name",
+                  "Value": "${formData.deceased_middle_name}"
+                },
+                {
+                  "Id": "deceased_last_name",
+                  "Value": "${formData.deceased_last_name}"
+                },
+                {
+                  "Id": "deceased_suffix",
+                  "Value": "${formData.deceased_suffix}"
+                },
+                {
+                  "Id": "deceased_gender",
+                  "Value": "${formData.deceased_gender}"
+                },
+                {
+                  "Id": "deceased_age",
+                  "Value": "${formData.deceased_age}"
+                },
+                {
+                  "Id": "deceased_ssn",
+                  "Value": "${formData.deceased_social_security_number}"
+                },
+                {
+                  "Id": "deceased_birth",
+                  "Value": "${formData.deceased_date_birth}"
+                },
+                {
+                  "Id": "deceased_address",
+                  "Value": "${formData.deceased_street_address}, ${formData.deceased_city}, ${formData.deceased_state} ${formData.deceased_zip_code}"
+                },
+                {
+                  "Id": "deceased_phone",
+                  "Value": "${formData.deceased_phone}"
+                },
+                {
+                  "Id": "deceased_email",
+                  "Value": "${formData.deceased_email}"
+                },
+                {
+                  "Id": "license",
+                  "Value": "${formData.license}"
+                },
+                {
+                  "Id": "deceased_gender_1",
+                  "Value": "${formData.deceased_gender}"
+                },
+                {
+                  "Id": "self_or_loved_one",
+                  "Value": "Loved One"
+                },
+                {
+                  "Id": "contact_first_name",
+                  "Value": "${formData.contact_first_name}"
+                },
+                {
+                  "Id": "contact_middle_name",
+                  "Value": "${formData.contact_middle_name}"
+                },
+                {
+                  "Id": "contact_last_name",
+                  "Value": "${formData.contact_last_name}"
+                },
+                {
+                  "Id": "contact_relationship",
+                  "Value": "${formData.contact_relationship}"
+                },
+                {
+                  "Id": "deceased_street_address",
+                  "Value": "${formData.deceased_street_address}"
+                },
+                {
+                  "Id": "deceased_city",
+                  "Value": "${formData.deceased_city}"
+                },
+                {
+                  "Id": "deceased_state",
+                  "Value": "${formData.deceased_state}"
+                },
+                {
+                  "Id": "deceased_zip",
+                  "Value": "${formData.deceased_zip_code}"
+                },
+              ]
+            }
+          ]
+        }`;
+        
+        try {
+          const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=a01c1cff-d4d0-4c6f-81a3-933c5f67a39f", {
+            method: "POST",
+            headers: {
+              "accept": "application/json",
+              "X-API-KEY": boldSignApiKey,
+              "Content-Type": "application/json"
+            },
+            body: body
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
+          }
+
+          res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+        } catch (error) {
+          return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+        }
+      } else {
+        const body = `{
+          "Roles": [
+            {
+              "RoleIndex": 1,
+              "SignerName": "${formData.contact_first_name}",
+              "SignerOrder": 1,
+              "SignerEmail": "${formData.contact_email}",
+              "SignerType": "Signer",
+              "ExistingFormFields": [
+                {
+                  "Id": "service_type",
+                  "Value": "${formData.service_package_type}"
+                },
+                {
+                  "Id": "service_package",
+                  "Value": "${formData.service_package_package_name}"
+                },
+                {
+                  "Id": "service_package_price",
+                  "Value": "$${formData.service_package_price}"
+                },
+                {
+                  "Id": "urn_title",
+                  "Value": "${formData.urn_quantity > 0 ? `${formData.urn_title} x ${formData.urn_quantity}` : ''}"
+                },
+                {
+                  "Id": "urn_details",
+                  "Value": "${urnDetails ? `${urnDetails.length > 0 ? urnDetails[0] : ''}
+          ${urnDetails.length > 1 ? urnDetails[1] : ''}   ${urnDetails.length > 2 ? urnDetails[2] : ''}
+          ${urnDetails.length > 3 ? urnDetails[3] : ''}   ${urnDetails.length > 4 ? urnDetails[4] : ''}` : ''}"
+                },
+                {
+                  "Id": "urn_price",
+                  "Value": "${formData.urn_price ? `$${formData.urn_price}` : ''}"
+                },
+                {
+                  "Id": "merchandise_title_0",
+                  "Value": "${formData.merchandise_0_title ? `${formData.merchandise_0_title} x ${formData.merchandise_0_quantity}` : ''}"
+                },
+                {
+                  "Id": "merchandise_details_0",
+                  "Value": "${merchandiseDetails0 ? `${merchandiseDetails0.length > 0 ? merchandiseDetails0[0] : ''}
+          ${merchandiseDetails0.length > 1 ? merchandiseDetails0[1] : ''}   ${merchandiseDetails0.length > 2 ? merchandiseDetails0[2] : ''}
+          ${merchandiseDetails0.length > 3 ? merchandiseDetails0[3] : ''}   ${merchandiseDetails0.length > 4 ? merchandiseDetails0[4] : ''}` : ''}"
+                },
+                {
+                  "Id": "merchandise_price_0",
+                  "Value": "${formData.merchandise_0_total ? `$${formData.merchandise_0_total}` : ''}"
+                },
+                {
+                  "Id": "merchandise_title_1",
+                  "Value": "${formData.merchandise_1_title ? `${formData.merchandise_1_title} x ${formData.merchandise_1_quantity}` : ''}"
+                },
+                {
+                  "Id": "merchandise_details_1",
+                  "Value": "${merchandiseDetails1 ? `${merchandiseDetails1.length > 0 ? merchandiseDetails1[0] : ''}
+          ${merchandiseDetails1.length > 1 ? merchandiseDetails1[1] : ''}   ${merchandiseDetails1.length > 2 ? merchandiseDetails1[2] : ''}
+          ${merchandiseDetails1.length > 3 ? merchandiseDetails1[3] : ''}   ${merchandiseDetails1.length > 4 ? merchandiseDetails1[4] : ''}` : ''}"
+                },
+                {
+                  "Id": "merchandise_price_1",
+                  "Value": "${formData.merchandise_1_total ? `$${formData.merchandise_1_total}` : ''}"
+                },
+                {
+                  "Id": "merchandise_title_2",
+                  "Value": "${formData.merchandise_2_title ? `${formData.merchandise_2_title} x ${formData.merchandise_2_quantity}` : ''}"
+                },
+                {
+                  "Id": "merchandise_details_2",
+                  "Value": "${merchandiseDetails2 ? `${merchandiseDetails2.length > 0 ? merchandiseDetails2[0] : ''}
+          ${merchandiseDetails2.length > 1 ? merchandiseDetails2[1] : ''}   ${merchandiseDetails2.length > 2 ? merchandiseDetails2[2] : ''}
+          ${merchandiseDetails2.length > 3 ? merchandiseDetails2[3] : ''}   ${merchandiseDetails2.length > 4 ? merchandiseDetails2[4] : ''}` : ''}"
+                },
+                {
+                  "Id": "merchandise_price_2",
+                  "Value": "${formData.merchandise_2_total ? `$${formData.merchandise_2_total}` : ''}"
+                },
+                {
+                  "Id": "merchandise_title_3",
+                  "Value": "${formData.merchandise_3_title ? `${formData.merchandise_3_title} x ${formData.merchandise_3_quantity}` : ''}"
+                },
+                {
+                  "Id": "merchandise_details_3",
+                  "Value": "${merchandiseDetails3 ? `${merchandiseDetails3.length > 0 ? merchandiseDetails3[0] : ''}
+          ${merchandiseDetails3.length > 1 ? merchandiseDetails3[1] : ''}   ${merchandiseDetails3.length > 2 ? merchandiseDetails3[2] : ''}
+          ${merchandiseDetails3.length > 3 ? merchandiseDetails3[3] : ''}   ${merchandiseDetails3.length > 4 ? merchandiseDetails3[4] : ''}` : ''}"
+                },
+                {
+                  "Id": "merchandise_price_3",
+                  "Value": "${formData.merchandise_3_total ? `$${formData.merchandise_3_total}` : ''}"
+                },
+                {
+                  "Id": "witness_price",
+                  "Value": "${witnessCremation}"
+                },
+                {
+                  "Id": "private_viewing_price", 
+                  "Value": "$${formData.private_family_viewing_total}"
+                },
+                {
+                  "Id": "transfer_price",
+                  "Value": "$${formData.transfer_fee_price}"
+                },
+                {
+                  "Id": "death_certificate_qty", 
+                  "Value": "${formData.death_certificates_quantity}"
+                },
+                {
+                  "Id": "death_certificate_price",
+                  "Value": "$${formData.death_certificates_total}"
+                },
+                {
+                  "Id": "shipping",
+                  "Value": "$${formData.shipping}"
+                },
+                {
+                  "Id": "total_before_tax",
+                  "Value": "$${formData.total_before_tax}"
+                },
+                {
+                  "Id": "sale_tax",
+                  "Value": "$${formData.sales_tax}"
+                },
+                {
+                  "Id": "total",
+                  "Value": "$${formData.total_order}"
+                },
+                {
+                  "Id": "purchaser_first_name",
+                  "Value": "${formData.contact_first_name}"
+                },
+                {
+                  "Id": "purchaser_middle_name",
+                  "Value": "${formData.contact_middle_name}"
+                },
+                {
+                  "Id": "purchaser_last_name",
+                  "Value": "${formData.contact_last_name}"
+                },
+                {
+                  "Id": "purchaser_suffix",
+                  "Value": "${formData.contact_suffix}"
+                },
+                {
+                  "Id": "purchaser_relationship",
+                  "Value": "${formData.contact_relationship}"
+                },
+                {
+                  "Id": "purchaser_phone",
+                  "Value": "${formData.contact_phone}"
+                },
+                {
+                  "Id": "purchaser_address",
+                  "Value": "${formData.contact_street_address}, ${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
+                },
+                {
+                  "Id": "purchaser_email",
+                  "Value": "${formData.contact_email}"
+                },
+                {
+                  "Id": "deceased_first_name",
+                  "Value": "${formData.deceased_first_name}"
+                },
+                {
+                  "Id": "deceased_middle_name",
+                  "Value": "${formData.deceased_middle_name}"
+                },
+                {
+                  "Id": "deceased_last_name",
+                  "Value": "${formData.deceased_last_name}"
+                },
+                {
+                  "Id": "deceased_suffix",
+                  "Value": "${formData.deceased_suffix}"
+                },
+                {
+                  "Id": "deceased_gender",
+                  "Value": "${formData.deceased_gender}"
+                },
+                {
+                  "Id": "deceased_age",
+                  "Value": "${formData.deceased_age}"
+                },
+                {
+                  "Id": "deceased_ssn",
+                  "Value": "${formData.deceased_social_security_number}"
+                },
+                {
+                  "Id": "deceased_birth",
+                  "Value": "${formData.deceased_date_birth}"
+                },
+                {
+                  "Id": "deceased_address",
+                  "Value": "${formData.deceased_street_address}, ${formData.deceased_city}, ${formData.deceased_state} ${formData.deceased_zip_code}"
+                },
+                {
+                  "Id": "deceased_phone",
+                  "Value": "${formData.deceased_phone}"
+                },
+                {
+                  "Id": "deceased_email",
+                  "Value": "${formData.deceased_email}"
+                },
+                {
+                  "Id": "license",
+                  "Value": "${formData.license}"
+                },
+                {
+                  "Id": "deceased_gender_1",
+                  "Value": "${formData.deceased_gender}"
+                },
+                {
+                  "Id": "deceased_street_address",
+                  "Value": "${formData.deceased_street_address}"
+                },
+                {
+                  "Id": "deceased_city",
+                  "Value": "${formData.deceased_city}"
+                },
+                {
+                  "Id": "deceased_state",
+                  "Value": "${formData.deceased_state}"
+                },
+                {
+                  "Id": "deceased_zip",
+                  "Value": "${formData.deceased_zip_code}"
+                },
+              ]
+            }
+          ]
+        }`;
+        try {
+          const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=9f2aa91e-4269-42b8-ac1b-d42ca03da911", {
+            method: "POST",
+            headers: {
+              "accept": "application/json",
+              "X-API-KEY": boldSignApiKey,
+              "Content-Type": "application/json"
+            },
+            body: body
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
+          }
+
+          res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+        } catch (error) {
+          return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+        }
+      }
+    }
   }
 });
 
