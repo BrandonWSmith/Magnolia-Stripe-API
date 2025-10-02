@@ -1418,13 +1418,13 @@ app.post('/send-forms', async (req, res) => {
         resource
       });
 
-      if (!results.ok) {
-        res.json({message: 'There was an issue sending data to Google Sheets', data: results});
+      if (results.status != 200) {
+        return res.json({message: 'There was an issue sending data to Google Sheets', data: results});
       }
 
       return results;
     } catch (error) {
-      res.json({message: 'There was an issue sending data to Google Sheets', data: error.message || error});
+      return res.json({message: 'There was an issue sending data to Google Sheets', data: error.message || error});
     }
   }
 
