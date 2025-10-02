@@ -1324,7 +1324,7 @@ app.post('/send-forms', async (req, res) => {
 
   async function sendToGoogleSheet() {
     const auth = new GoogleAuth({
-      keyFile: './google.json',
+      keyFile: '/etc/secrets/google.json',
       scopes: 'https://www.googleapis.com/auth/spreadsheets',
     });
 
