@@ -1334,6 +1334,7 @@ app.post('/send-forms', async (req, res) => {
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
     const range = 'Sheet1!A2';
     const valueInputOption = 'USER_ENTERED';
+    const insertDataOption = 'INSERT_ROWS';
 
     const values = [
       [
@@ -1341,8 +1342,8 @@ app.post('/send-forms', async (req, res) => {
         formData.service_package_package_name,
         formData.urn_title,
         formData.urn_details,
-        `${formData.merchandise_0_title ? `${formData.merchandise_0_title}` : ''}${formData.merchandise_1_title ? `, ${formData.merchandise_1_title}, ` : ''}${formData.merchandise_2_title ? `, ${formData.merchandise_2_title}` : ''}${formData.merchandise_3_title ? `, ${formData.merchandise_3_title}` : ''}`,
-        `${formData.merchandise_0_details ? `Merchandise0: ${formData.merchandise_0_details}` : ''}${formData.merchandise_1_details ? ` Merchandise1: ${formData.merchandise_1_details}, ` : ''}${formData.merchandise_2_details ? ` Merchandise2: ${formData.merchandise_2_details}` : ''}${formData.merchandise_3_details ? ` Merchandise3: ${formData.merchandise_3_details}` : ''}`,
+        `${formData.merchandise_0_title ? `${formData.merchandise_0_title}` : ''}${formData.merchandise_1_title ? `, ${formData.merchandise_1_title} ` : ''}${formData.merchandise_2_title ? `, ${formData.merchandise_2_title}` : ''}${formData.merchandise_3_title ? `, ${formData.merchandise_3_title}` : ''}`,
+        `${formData.merchandise_0_details ? `Merchandise0: ${formData.merchandise_0_details}` : ''}${formData.merchandise_1_details ? ` Merchandise1: ${formData.merchandise_1_details} ` : ''}${formData.merchandise_2_details ? ` Merchandise2: ${formData.merchandise_2_details}` : ''}${formData.merchandise_3_details ? ` Merchandise3: ${formData.merchandise_3_details}` : ''}`,
         liability ? "Yes" : "No",
         formData.contact_first_name,
         formData.contact_middle_name,
@@ -1372,35 +1373,42 @@ app.post('/send-forms', async (req, res) => {
         formData.deceased_age,
         formData.deceased_gender,
         formData.deceased_social_security_number,
-        `${formData.pick_up_location_facility_name != '' ? `${formData.pick_up_location_facility_name} ` : ''}(${formData.pick_up_location_location_type}) ${formData.pick_up_location_street_address}, ${formData.pick_up_location_city}, ${formData.pick_up_location_state} ${formData.pick_up_location_zip_code}`,
-        `${formData.place_of_passing_facility_name != '' ? `${formData.place_of_passing_facility_name} ` : ''}(${formData.place_of_passing_location_type}) ${formData.place_of_passing_street_address}, ${formData.place_of_passing_city}, ${formData.place_of_passing_state} ${formData.place_of_passing_zip_code}`,
+        `${formData.pick_up_location_street_address ? `${formData.pick_up_location_facility_name != '' ? `${formData.pick_up_location_facility_name} ` : ''}(${formData.pick_up_location_location_type}) ${formData.pick_up_location_street_address}, ${formData.pick_up_location_city}, ${formData.pick_up_location_state} ${formData.pick_up_location_zip_code}` : ''}`,
+        `${formData.place_of_passing_street_address ? `${formData.place_of_passing_facility_name != '' ? `${formData.place_of_passing_facility_name} ` : ''}(${formData.place_of_passing_location_type}) ${formData.place_of_passing_street_address}, ${formData.place_of_passing_city}, ${formData.place_of_passing_state} ${formData.place_of_passing_zip_code}` : ''}`,
         `${formData.next_of_kin_0_full_name ? formData.next_of_kin_0_full_name : ''}`,
         `${formData.next_of_kin_0_email ? formData.next_of_kin_0_email : ''}`,
         `${formData.next_of_kin_0_phone ? formData.next_of_kin_0_phone : ''}`,
         `${formData.next_of_kin_0_relationship ? formData.next_of_kin_0_relationship : ''}`,
-        `${formData.next_of_kin_0_street_address ? `${formData.next_of_kin_0_street_address}, ${formData.next_of_kin_0_city}, ${formData.next_of_kin_0_state} ${formData.next_of_kin_0_zip_code}` : ''}`,
+        `${formData.next_of_kin_0_street_address ? formData.next_of_kin_0_street_address : ''}`,
+        `${formData.next_of_kin_0_city ? `${formData.next_of_kin_0_city}, ${formData.next_of_kin_0_state} ${formData.next_of_kin_0_zip_code}` : ''}`,
         `${formData.next_of_kin_1_full_name ? formData.next_of_kin_1_full_name : ''}`,
         `${formData.next_of_kin_1_email ? formData.next_of_kin_1_email : ''}`,
         `${formData.next_of_kin_1_phone ? formData.next_of_kin_1_phone : ''}`,
         `${formData.next_of_kin_1_relationship ? formData.next_of_kin_1_relationship : ''}`,
         `${formData.next_of_kin_1_street_address ? `${formData.next_of_kin_1_street_address}, ${formData.next_of_kin_1_city}, ${formData.next_of_kin_1_state} ${formData.next_of_kin_1_zip_code}` : ''}`,
+        `${formData.next_of_kin_1_city ? `${formData.next_of_kin_1_city}, ${formData.next_of_kin_1_state} ${formData.next_of_kin_1_zip_code}` : ''}`,
         `${formData.next_of_kin_2_full_name ? formData.next_of_kin_2_full_name : ''}`,
         `${formData.next_of_kin_2_email ? formData.next_of_kin_2_email : ''}`,
         `${formData.next_of_kin_2_phone ? formData.next_of_kin_2_phone : ''}`,
         `${formData.next_of_kin_2_relationship ? formData.next_of_kin_2_relationship : ''}`,
         `${formData.next_of_kin_2_street_address ? `${formData.next_of_kin_2_street_address}, ${formData.next_of_kin_2_city}, ${formData.next_of_kin_2_state} ${formData.next_of_kin_2_zip_code}` : ''}`,
+        `${formData.next_of_kin_2_city ? `${formData.next_of_kin_2_city}, ${formData.next_of_kin_2_state} ${formData.next_of_kin_2_zip_code}` : ''}`,
         `${formData.next_of_kin_3_full_name ? formData.next_of_kin_3_full_name : ''}`,
         `${formData.next_of_kin_3_email ? formData.next_of_kin_3_email : ''}`,
         `${formData.next_of_kin_3_phone ? formData.next_of_kin_3_phone : ''}`,
         `${formData.next_of_kin_3_relationship ? formData.next_of_kin_3_relationship : ''}`,
         `${formData.next_of_kin_3_street_address ? `${formData.next_of_kin_3_street_address}, ${formData.next_of_kin_3_city}, ${formData.next_of_kin_3_state} ${formData.next_of_kin_3_zip_code}` : ''}`,
+        `${formData.next_of_kin_3_city ? `${formData.next_of_kin_3_city}, ${formData.next_of_kin_3_state} ${formData.next_of_kin_3_zip_code}` : ''}`,
         `${formData.next_of_kin_4_full_name ? formData.next_of_kin_4_full_name : ''}`,
         `${formData.next_of_kin_4_email ? formData.next_of_kin_4_email : ''}`,
         `${formData.next_of_kin_4_phone ? formData.next_of_kin_4_phone : ''}`,
         `${formData.next_of_kin_4_relationship ? formData.next_of_kin_4_relationship : ''}`,
         `${formData.next_of_kin_4_street_address ? `${formData.next_of_kin_4_street_address}, ${formData.next_of_kin_4_city}, ${formData.next_of_kin_4_state} ${formData.next_of_kin_4_zip_code}` : ''}`,
+        `${formData.next_of_kin_4_city ? `${formData.next_of_kin_4_city}, ${formData.next_of_kin_4_state} ${formData.next_of_kin_4_zip_code}` : ''}`,
         formData.delivery_method,
         `${formData.shipping_address ? formData.shipping_address : ''}`,
+        `${formData.private_family_viewing_total > 0 ? "Selected" : "Not Selected"}`,
+        witnessCremation,
         formData.total_before_tax,
         formData.sales_tax,
         formData.total_order
@@ -1412,10 +1420,11 @@ app.post('/send-forms', async (req, res) => {
     }
 
     try {
-      const results = await service.spreadsheets.values.update({
+      const results = await service.spreadsheets.values.append({
         spreadsheetId,
         range,
         valueInputOption,
+        insertDataOption,
         resource
       });
 
