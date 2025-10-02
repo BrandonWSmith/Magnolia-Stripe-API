@@ -1418,7 +1418,7 @@ app.post('/send-forms', async (req, res) => {
     }
 
     try {
-      const results = await service.spreadsheets.values.update({
+      const results = await service.spreadsheets.values.append({
         spreadsheetId,
         range,
         valueInputOption,
