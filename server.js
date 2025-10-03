@@ -2655,23 +2655,23 @@ app.post('/send-forms', async (req, res) => {
                 {
                   "Id": "self_or_loved_one",
                   "Value": "Loved One"
-                },` : ''}
-              {
-                "Id": "contact_full_name",
-                "Value": "${formData.contact_first_name}${formData.contact_middle_name != '' ? ` ${formData.contact_middle_name}` : ''} ${formData.contact_last_name}${formData.contact_suffix != '' ? ` ${formData.contact_suffix}` : ''}"
-              },
-              {
-                "Id": "contact_age",
-                "Value": "${formData.contact_age}"
-              },
-              {
-                "Id": "contact_street_address",
-                "Value": "${formData.contact_street_address}"
-              },
-              {
-                "Id": "contact_city_state_zip",
-                "Value": "${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
-              }
+                },
+                {
+                  "Id": "contact_full_name",
+                  "Value": "${formData.contact_first_name}${formData.contact_middle_name != '' ? ` ${formData.contact_middle_name}` : ''} ${formData.contact_last_name}${formData.contact_suffix != '' ? ` ${formData.contact_suffix}` : ''}"
+                },
+                {
+                  "Id": "contact_age",
+                  "Value": "${formData.contact_age}"
+                },
+                {
+                  "Id": "contact_street_address",
+                  "Value": "${formData.contact_street_address}"
+                },
+                {
+                  "Id": "contact_city_state_zip",
+                  "Value": "${formData.contact_city}, ${formData.contact_state} ${formData.contact_zip_code}"
+                }` : ''}
             ]
           }
         ]
