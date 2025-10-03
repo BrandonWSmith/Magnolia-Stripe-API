@@ -1887,7 +1887,7 @@ app.post('/send-forms', async (req, res) => {
 
         res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
     } else {
       try {
