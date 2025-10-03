@@ -1440,6 +1440,11 @@ app.post('/send-forms', async (req, res) => {
   const googleSheetsData = await sendToGoogleSheet();
 
   let nokCount = 0;
+  const shipping_address = `,
+    {
+      "Id": "shipping_address",
+      "Value": "${formData.shipping_address}"
+    }`;
 
   if (formData.service_package_type === "Immediate Need") {
     let unusedRoleIndices = [2, 3, 4, 5, 6];
@@ -1838,11 +1843,7 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "shipping_check",
               "Value": "${formData.delivery_method}
-            }${formData.delivery_method === 'Delivery' ? `,
-            {
-              "Id": "shipping_address",
-              "Value": "${formData.shipping_address}"
-            }` : ''}
+            }${formData.delivery_method === 'Delivery' ? shipping_address : ''}
           ]
         },
         ${nokPrefills.length > 0 ? `${nokPrefills.map(role => JSON.stringify(role))},` : ''}{
@@ -2341,11 +2342,7 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "shipping_check",
               "Value": "${formData.delivery_method}
-            }${formData.delivery_method === 'Delivery' ? `,
-            {
-              "Id": "shipping_address",
-              "Value": "${formData.shipping_address}"
-            }` : ''}
+            }${formData.delivery_method === 'Delivery' ? shipping_address : ''}
           ]
         }${nokPrefills.length > 0 ? `,
           ${nokPrefills.map(role => JSON.stringify(role))}` : ''}
