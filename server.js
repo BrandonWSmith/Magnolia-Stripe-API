@@ -1842,7 +1842,7 @@ app.post('/send-forms', async (req, res) => {
             },
             {
               "Id": "shipping_check",
-              "Value": "${formData.delivery_method}
+              "Value": "${formData.delivery_method}"
             }${formData.delivery_method === 'Delivery' ? shipping_address : ''}
           ]
         },
@@ -2341,7 +2341,7 @@ app.post('/send-forms', async (req, res) => {
             },
             {
               "Id": "shipping_check",
-              "Value": "${formData.delivery_method}
+              "Value": "${formData.delivery_method}"
             }${formData.delivery_method === 'Delivery' ? shipping_address : ''}
           ]
         }${nokPrefills.length > 0 ? `,
