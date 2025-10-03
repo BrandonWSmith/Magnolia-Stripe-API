@@ -1882,10 +1882,10 @@ app.post('/send-forms', async (req, res) => {
         const data = await response.json();
 
         if (!response.ok) {
-          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
         }
 
-        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+        res.json({message: 'Forms sent successfully'});
       } catch (error) {
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
@@ -1904,12 +1904,12 @@ app.post('/send-forms', async (req, res) => {
         const data = await response.json();
 
         if (!response.ok) {
-          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
         }
 
-        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+        res.json({message: 'Forms sent successfully'});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
     }
   } else if (formData.service_package_type === "Passing Soon") {
@@ -2365,7 +2365,7 @@ app.post('/send-forms', async (req, res) => {
         const sgsAndVitalData = await sgsAndVitalResponse.json();
 
         if (!sgsAndVitalResponse.ok) {
-          return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, google_sheets_data: googleSheetsData});
+          return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, body: sgsAndVitalBody});
         }
 
         const cremAuthResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=886f8e77-1140-4efb-aab5-c554fbb4f65a", {
@@ -2381,12 +2381,12 @@ app.post('/send-forms', async (req, res) => {
         const cremAuthData = await cremAuthResponse.json();
 
         if (!cremAuthResponse.ok) {
-          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, google_sheets_data: googleSheetsData});
+          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, body: cremAuthBody});
         }
 
-        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+        res.json({message: 'Forms sent successfully'});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
       }
     } else {
       try {
@@ -2403,7 +2403,7 @@ app.post('/send-forms', async (req, res) => {
         const sgsAndVitalData = await sgsAndVitalResponse.json();
 
         if (!sgsAndVitalResponse.ok) {
-          return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, google_sheets_data: googleSheetsData});
+          return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, body: sgsAndVitalBody});
         }
 
         const cremAuthResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=23932329-d871-412c-98b6-492d57aabf88", {
@@ -2419,12 +2419,12 @@ app.post('/send-forms', async (req, res) => {
         const cremAuthData = await cremAuthResponse.json();
 
         if (!cremAuthResponse.ok) {
-          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, google_sheets_data: googleSheetsData});
+          return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, body: cremAuthBody});
         }
 
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
       }
     }
   } else if (formData.service_package_type === "Planning Ahead") {
@@ -2687,12 +2687,12 @@ app.post('/send-forms', async (req, res) => {
         const data = await response.json();
 
         if (!response.ok) {
-          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
+          return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
         }
 
-        res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+        res.json({message: 'Forms sent successfully'});
       } catch (error) {
-        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+        return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
     } else if (formData.deceased_state === "Kentucky") {
       if (formData.plan_ahead_person === "Loved One") {
@@ -2962,12 +2962,12 @@ app.post('/send-forms', async (req, res) => {
           const data = await response.json();
 
           if (!response.ok) {
-            return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
+            return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
           }
 
-          res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+          res.json({message: 'Forms sent successfully'});
         } catch (error) {
-          return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+          return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
         }
       } else {
         const body = `{
@@ -3215,12 +3215,12 @@ app.post('/send-forms', async (req, res) => {
           const data = await response.json();
 
           if (!response.ok) {
-            return res.status(response.status).json({message: 'There was an issue sending forms', data: data, google_sheets_data: googleSheetsData});
+            return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
           }
 
-          res.json({message: 'Forms sent successfully', google_sheets_data: googleSheetsData});
+          res.json({message: 'Forms sent successfully'});
         } catch (error) {
-          return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, google_sheets_data: googleSheetsData});
+          return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
         }
       }
     }
