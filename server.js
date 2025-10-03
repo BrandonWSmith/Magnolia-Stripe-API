@@ -2651,7 +2651,11 @@ app.post('/send-forms', async (req, res) => {
               {
                 "Id": "deceased_city_state_zip",
                 "Value": "${formData.deceased_city}, ${formData.deceased_state} ${formData.deceased_zip_code}"
-              },
+              },${formData.plan_ahead_person === "Loved One" ? `
+                {
+                  "Id": "self_or_loved_one",
+                  "Value": "Loved One"
+                },` : ''}
               {
                 "Id": "contact_full_name",
                 "Value": "${formData.contact_first_name}${formData.contact_middle_name != '' ? ` ${formData.contact_middle_name}` : ''} ${formData.contact_last_name}${formData.contact_suffix != '' ? ` ${formData.contact_suffix}` : ''}"
