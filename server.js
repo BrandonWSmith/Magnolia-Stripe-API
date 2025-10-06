@@ -1335,8 +1335,11 @@ app.post('/send-forms', async (req, res) => {
     const valueInputOption = 'USER_ENTERED';
     const insertDataOption = 'INSERT_ROWS';
 
+    const createdAt = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+
     const values = [
       [
+        `'${createdAt}`,
         formData.service_package_type,
         formData.service_package_package_name,
         formData.urn_title,
