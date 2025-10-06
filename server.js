@@ -1444,6 +1444,11 @@ app.post('/send-forms', async (req, res) => {
   const googleSheetsData = await sendToGoogleSheet();
 
   let nokCount = 0;
+  const witnessing = `
+    {
+      "Id": "witnessing",
+      "Value": "Yes"
+    },`;
   const shipping_address = `,
     {
       "Id": "shipping_address",
@@ -1843,6 +1848,10 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "deceased_gender_2",
               "Value": "${formData.deceased_gender}"
+            },${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? witnessing : ''}
+            {
+              "Id": "cremation_time",
+              "Value": "${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? 'Specified' : 'Unspecified'}"
             },
             {
               "Id": "shipping_check",
@@ -2342,6 +2351,10 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "contact_relationship",
               "Value": "${formData.contact_relationship}"
+            },${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? witnessing : ''}
+            {
+              "Id": "cremation_time",
+              "Value": "${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? 'Specified' : 'Unspecified'}"
             },
             {
               "Id": "shipping_check",
