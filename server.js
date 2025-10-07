@@ -1320,7 +1320,7 @@ app.post('/send-forms', async (req, res) => {
   const { formData } = req.body;
   const boldSignApiKey = process.env.BOLDSIGN_API_KEY;
 
-  const witnessCremation = formData.witness_cremation_quantity > 0 ? "Selected" : "Not Selected";
+  const witnessCremation = formData.witness_cremation_quantity && formData.witness_cremation_quantity > 0 ? "Selected" : "Not Selected";
   const urnDetails = formData.urn_details ? formData.urn_details.split(",") : null;
   const merchandiseDetails0 = formData.merchandise_0_details ? formData.merchandise_0_details.split(",") : null;
   const merchandiseDetails1 = formData.merchandise_1_details ? formData.merchandise_1_details.split(",") : null;
