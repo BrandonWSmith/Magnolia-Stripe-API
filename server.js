@@ -233,6 +233,11 @@ app.post('/shopify-admin-api', async (req, res) => {
     isEmbeddedApp: true,
     isCustomStoreApp: true,
     adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+    future: {
+      lineItemBilling: true,
+      customerAddressDefaultFix: true,
+      unstable_managedPricingSupport: true,
+    },
   });
   const sessionId = shopify.session.getOfflineId('magnolia-cremations.myshopify.com');
   const session = new Session({
@@ -1346,6 +1351,7 @@ app.post('/send-forms', async (req, res) => {
         formData.urn_details,
         `${formData.merchandise_0_title ? `${formData.merchandise_0_title}` : ''}${formData.merchandise_1_title ? `, ${formData.merchandise_1_title} ` : ''}${formData.merchandise_2_title ? `, ${formData.merchandise_2_title}` : ''}${formData.merchandise_3_title ? `, ${formData.merchandise_3_title}` : ''}`,
         `${formData.merchandise_0_details ? `Merchandise0: ${formData.merchandise_0_details}` : ''}${formData.merchandise_1_details ? ` Merchandise1: ${formData.merchandise_1_details} ` : ''}${formData.merchandise_2_details ? ` Merchandise2: ${formData.merchandise_2_details}` : ''}${formData.merchandise_3_details ? ` Merchandise3: ${formData.merchandise_3_details}` : ''}`,
+        formData.death_certificates_quantity,
         liability ? "Yes" : "No",
         formData.contact_first_name,
         formData.contact_middle_name,
