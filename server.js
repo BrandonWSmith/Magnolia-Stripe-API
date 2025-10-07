@@ -1338,8 +1338,6 @@ app.post('/send-forms', async (req, res) => {
 
     const createdAt = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
 
-    console.log(formData);
-    
     const values = [
       [
         `'${createdAt}`,
