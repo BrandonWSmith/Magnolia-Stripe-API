@@ -1352,7 +1352,7 @@ app.post('/send-forms', async (req, res) => {
         formData.urn_details,
         `${formData.merchandise_0_title ? `${formData.merchandise_0_title}` : ''}${formData.merchandise_1_title ? `, ${formData.merchandise_1_title} ` : ''}${formData.merchandise_2_title ? `, ${formData.merchandise_2_title}` : ''}${formData.merchandise_3_title ? `, ${formData.merchandise_3_title}` : ''}`,
         `${formData.merchandise_0_details ? `Merchandise0: ${formData.merchandise_0_details}` : ''}${formData.merchandise_1_details ? ` Merchandise1: ${formData.merchandise_1_details} ` : ''}${formData.merchandise_2_details ? ` Merchandise2: ${formData.merchandise_2_details}` : ''}${formData.merchandise_3_details ? ` Merchandise3: ${formData.merchandise_3_details}` : ''}`,
-        formData.death_certificates_quantity,
+        formData.death_certificates_quantity ? formData.death_certificates_quantity : '0',
         liability ? "Yes" : "No",
         formData.contact_first_name,
         formData.contact_middle_name,
