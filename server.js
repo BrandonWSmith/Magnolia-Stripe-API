@@ -234,6 +234,11 @@ app.post('/shopify-admin-api', async (req, res) => {
     isEmbeddedApp: true,
     isCustomStoreApp: true,
     adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+    future: {
+      lineItemBilling: true,
+      customerAddressDefaultFix: true,
+      unstable_managedPricingSupport: true,
+    },
   });
   const sessionId = shopify.session.getOfflineId('magnolia-cremations.myshopify.com');
   const session = new Session({
