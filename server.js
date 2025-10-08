@@ -1345,6 +1345,8 @@ app.post('/send-forms', async (req, res) => {
     const values = [
       [
         `'${createdAt}`,
+        formData.webhook ? true : false,
+        formData.order_id,
         formData.service_package_type,
         formData.service_package_package_name,
         formData.urn_title,
@@ -1449,6 +1451,11 @@ app.post('/send-forms', async (req, res) => {
   const googleSheetsData = await sendToGoogleSheet();
 
   let nokCount = 0;
+  const witnessing = `
+    {
+      "Id": "witnessing",
+      "Value": "Yes"
+    },`;
   const shipping_address = `,
     {
       "Id": "shipping_address",
@@ -1848,6 +1855,10 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "deceased_gender_2",
               "Value": "${formData.deceased_gender}"
+            },${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? witnessing : ''}
+            {
+              "Id": "cremation_time",
+              "Value": "${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? 'Specified' : 'Unspecified'}"
             },
             {
               "Id": "shipping_check",
@@ -2347,6 +2358,10 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "contact_relationship",
               "Value": "${formData.contact_relationship}"
+            },${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? witnessing : ''}
+            {
+              "Id": "cremation_time",
+              "Value": "${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? 'Specified' : 'Unspecified'}"
             },
             {
               "Id": "shipping_check",
@@ -3237,6 +3252,71 @@ app.post('/send-forms', async (req, res) => {
         }
       }
     }
+  }
+});
+
+app.post('/shopify-webhook/orders-create', async (req, res) => {
+  const order = req.body;
+
+  if (order.source_name != 'web') {
+    return res.status(200).send();
+  }
+
+  try {
+    const auth = new GoogleAuth({
+      keyFile: '/etc/secrets/google.json',
+      scopes: 'https://www.googleapis.com/auth/spreadsheets',
+    });
+
+    const service = google.sheets({ version: 'v4', auth });
+
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    const range = 'Sheet1!C:C';
+    
+    const googleSheetresponse = await service.spreadsheets.values.get({
+      spreadsheetId,
+      range
+    });
+
+    const formData = JSON.parse(order.note_attributes[0].value);
+    const rows = googleSheetresponse.data.values || [];
+
+    const orderExists = rows.slice(1).some(row => row[0] === order.id?.toString());
+    
+    if (orderExists) {
+      console.log(`[WEBHOOK] Order #${order.id} already processed by pixel, skipping`);
+      return res.status(200).send();
+    }
+
+    const delivery = order.shipping_address ? 'Delivery' : 'Pickup';
+    formData.delivery_method = delivery;
+
+    if (delivery === 'Delivery') {
+      formData.shipping_address = `${order.shipping_address.address1}, ${order.shipping_address.city}, ${order.shipping_address.province} ${order.shipping_address.zip}`;
+    }
+
+    formData.shipping = order.shipping_lines[0]?.price || '0';
+    formData.sales_tax = order.total_tax;
+    formData.total_order = order.total_price;
+    formData.order_id = order.id;
+    formData.webhook = true;
+
+    const response = await fetch("https://magnolia-stripe-api.onrender.com/send-forms", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ formData: formData })
+    });
+
+    if (response.status === 200) {
+      console.log(`[WEBHOOK] Order #${order.id} processed successfully`);
+    }
+
+    res.status(200).send();
+  } catch (error) {
+    console.error('[WEBHOOK] Error processing order:', error.message || error);
+    res.send();
   }
 });
 
