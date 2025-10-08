@@ -3312,7 +3312,6 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
 
     if (response.status === 200) {
       console.log(`[WEBHOOK] Order #${order.id} processed successfully`);
-      localStorage.removeItem('formData');
     }
 
     res.status(200).send();
