@@ -1398,6 +1398,7 @@ app.post('/send-forms', async (req, res) => {
       [
         `'${createdAt}`,
         formData.webhook ? true : false,
+        formData.order_number,
         formData.service_package_type,
         formData.service_package_package_name,
         formData.urn_title,
@@ -3310,25 +3311,65 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
   const order = req.body;
 
   if (order.source_name != 'web') {
-    return res.status(200).send('Not a web order, ignoring.');
+    console.log('[WEBHOOK] Not a web order, ignoring');
+    return res.status(200).send();
   }
 
-  console.log(order);
-  const formData = JSON.parse(order.note_attributes[0].value);
+  try {
+    const auth = new GoogleAuth({
+      keyFile: '/etc/secrets/google.json',
+      scopes: 'https://www.googleapis.com/auth/spreadsheets',
+    });
 
-  const delivery = order.shipping_address ? 'Delivery' : 'Pickup';
-  formData.delivery_method = delivery;
+    const service = google.sheets({ version: 'v4', auth });
 
-  if (delivery === 'Delivery') {
-    formData.shipping_address = `${order.shipping_address.address1}, ${order.shipping_address.city}, ${order.shipping_address.province} ${order.shipping_address.zip}`;
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    const range = 'Sheet1!C:C';
+    
+    const response = await service.spreadsheets.values.get({
+      spreadsheetId,
+      range
+    });
+
+    const formData = JSON.parse(order.note_attributes[0].value);
+    const rows = response.data.values || [];
+
+    const orderExists = rows.slice(1).some(row => row[0] === order.order_number?.toString());
+    
+    if (orderExists) {
+      console.log(`[WEBHOOK] Order #${order.order_number} already processed by pixel, skipping`);
+      return res.status(200).send();
+    }
+
+    const delivery = order.shipping_address ? 'Delivery' : 'Pickup';
+    formData.delivery_method = delivery;
+
+    if (delivery === 'Delivery') {
+      formData.shipping_address = `${order.shipping_address.address1}, ${order.shipping_address.city}, ${order.shipping_address.province} ${order.shipping_address.zip}`;
+    }
+
+    formData.shipping = order.shipping_lines[0]?.price || '0';
+    formData.sales_tax = order.total_tax;
+    formData.total_order = order.total_price;
+    formData.order_number = order.order_number;
+    formData.webhook = true;
+
+    // TODO: Uncomment this when ready to process real orders
+    // Call /send-forms to process the order
+    // const response = await fetch(`http://localhost:${port}/send-forms`, {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ formData: formData })
+    // });
+    // const result = await response.json();
+    // console.log('[WEBHOOK] Processing result:', result);
+
+    console.log(`[WEBHOOK] Order #${order.order_number} would be processed here (testing mode)`);
+    res.status(200).send();
+  } catch (error) {
+    console.error('[WEBHOOK] Error processing order:', error.message || error);
+    res.send();
   }
-
-  formData.shipping = order.shipping_lines.price;
-  formData.sales_tax = order.total_tax;
-  formData.total_order = order.total_price;
-  formData.webhook = true;
-
-  console.log(formData);
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
