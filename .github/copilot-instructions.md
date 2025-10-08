@@ -9,7 +9,7 @@ This Node.js/Express server acts as a backend bridge for Magnolia Cremations, su
 - **Shopify Admin API**: Secure proxy for admin operations (GraphQL)
 - **Google Sheets**: Form data logging via Google APIs
 
-All logic is centralized in `server.js`. No modularization—routes, integrations, and business logic are implemented inline. This server is hosted on Render.com, the URL is https://magnolia-api.onrender.com.
+All logic is centralized in `server.js`. No modularization—routes, integrations, and business logic are implemented inline.
 
 ## Developer Workflows
 
@@ -29,6 +29,7 @@ All logic is centralized in `server.js`. No modularization—routes, integration
 - **Payment metadata**: Stripe payment intents store form data in `metadata` for later retrieval
 - **Webhook handling**: Stripe webhook signature verified if secret is present
 - **Temporary form storage**: Uses in-memory variables (`ip`, `hulkFormData`) for short-lived data
+- **Render Hosting**: This server is hosted on Render.com, environment variables and secret files are stored here so accessing these variables and files should follow any conventions specific to Render. In addition, calls to any endpoint in this server should use https://magnolia-api.onrender.com as the base URL
 
 ## Integration Points
 
