@@ -1397,6 +1397,7 @@ app.post('/send-forms', async (req, res) => {
     const values = [
       [
         `'${createdAt}`,
+        formData.webhook ? true : false,
         formData.service_package_type,
         formData.service_package_package_name,
         formData.urn_title,
@@ -3307,10 +3308,15 @@ app.post('/send-forms', async (req, res) => {
 
 app.post('/shopify-webhook/orders-create', async (req, res) => {
   const order = req.body;
+
+  if (order.source_name != 'web') {
+    return res.status(200).send('Not a web order, ignoring.');
+  }
+
   console.log(order);
   const formData = JSON.parse(order.note_attributes[0].value);
 
-  const delivery = order.shipping_lines && order.shipping_lines.length > 0 ? 'Delivery' : 'Pickup';
+  const delivery = order.shipping_address ? 'Delivery' : 'Pickup';
   formData.delivery_method = delivery;
 
   if (delivery === 'Delivery') {
@@ -3320,6 +3326,7 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
   formData.shipping = order.shipping_lines.price;
   formData.sales_tax = order.total_tax;
   formData.total_order = order.total_price;
+  formData.webhook = true;
 
   console.log(formData);
 });
