@@ -749,57 +749,6 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 let ip;
 let hulkFormData;
 
-// Tracking system for pixel vs webhook
-const submissionTracking = {
-  pixel: 0,
-  webhook: 0,
-  duplicate: 0,
-  lastReset: new Date(),
-  processedOrders: new Map() // Map of email+orderNum -> { source, timestamp }
-};
-
-// Helper function to generate order ID
-function generateOrderId(formData) {
-  const email = formData.contact_email || formData.purchaser_email || 'unknown';
-  const timestamp = formData.order_number || Date.now();
-  return `${email}_${timestamp}`;
-}
-
-// Helper function to check and track submission
-function trackSubmission(formData, source) {
-  const orderId = generateOrderId(formData);
-  
-  if (submissionTracking.processedOrders.has(orderId)) {
-    submissionTracking.duplicate++;
-    const existing = submissionTracking.processedOrders.get(orderId);
-    console.log(`[DUPLICATE] Order ${orderId} already processed by ${existing.source} at ${existing.timestamp}`);
-    return { isDuplicate: true, existingSource: existing.source };
-  }
-  
-  submissionTracking.processedOrders.set(orderId, {
-    source: source,
-    timestamp: new Date().toISOString()
-  });
-  
-  if (source === 'pixel') {
-    submissionTracking.pixel++;
-  } else if (source === 'webhook') {
-    submissionTracking.webhook++;
-  }
-  
-  console.log(`[${source.toUpperCase()}] Processing order ${orderId} - Total: Pixel=${submissionTracking.pixel}, Webhook=${submissionTracking.webhook}, Duplicates=${submissionTracking.duplicate}`);
-  
-  // Clean up old entries (older than 24 hours) to prevent memory leak
-  const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-  for (const [key, value] of submissionTracking.processedOrders.entries()) {
-    if (new Date(value.timestamp).getTime() < oneDayAgo) {
-      submissionTracking.processedOrders.delete(key);
-    }
-  }
-  
-  return { isDuplicate: false };
-}
-
 app.post('/store-form-data', (req, res) => {
   const { formData } = req.body;
   ip = req.headers['x-forward-for'] || req.socket.remoteAddress;
@@ -1398,7 +1347,7 @@ app.post('/send-forms', async (req, res) => {
       [
         `'${createdAt}`,
         formData.webhook ? true : false,
-        formData.order_number,
+        formData.order_id,
         formData.service_package_type,
         formData.service_package_package_name,
         formData.urn_title,
@@ -3334,10 +3283,10 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
     const formData = JSON.parse(order.note_attributes[0].value);
     const rows = response.data.values || [];
 
-    const orderExists = rows.slice(1).some(row => row[0] === order.order_number?.toString());
+    const orderExists = rows.slice(1).some(row => row[0] === order.id?.toString());
     
     if (orderExists) {
-      console.log(`[WEBHOOK] Order #${order.order_number} already processed by pixel, skipping`);
+      console.log(`[WEBHOOK] Order #${order.order_id} already processed by pixel, skipping`);
       return res.status(200).send();
     }
 
@@ -3351,7 +3300,7 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
     formData.shipping = order.shipping_lines[0]?.price || '0';
     formData.sales_tax = order.total_tax;
     formData.total_order = order.total_price;
-    formData.order_number = order.order_number;
+    formData.order_id = order.id;
     formData.webhook = true;
 
     // TODO: Uncomment this when ready to process real orders
@@ -3364,7 +3313,7 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
     // const result = await response.json();
     // console.log('[WEBHOOK] Processing result:', result);
 
-    console.log(`[WEBHOOK] Order #${order.order_number} would be processed here (testing mode)`);
+    console.log(`[WEBHOOK] Order #${order.id} would be processed here (testing mode)`);
     res.status(200).send();
   } catch (error) {
     console.error('[WEBHOOK] Error processing order:', error.message || error);
