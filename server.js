@@ -3260,7 +3260,6 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
   const order = req.body;
 
   if (order.source_name != 'web') {
-    console.log('[WEBHOOK] Not a web order, ignoring');
     return res.status(200).send();
   }
 
@@ -3275,18 +3274,18 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
     const range = 'Sheet1!C:C';
     
-    const response = await service.spreadsheets.values.get({
+    const googleSheetresponse = await service.spreadsheets.values.get({
       spreadsheetId,
       range
     });
 
     const formData = JSON.parse(order.note_attributes[0].value);
-    const rows = response.data.values || [];
+    const rows = googleSheetresponse.data.values || [];
 
     const orderExists = rows.slice(1).some(row => row[0] === order.id?.toString());
     
     if (orderExists) {
-      console.log(`[WEBHOOK] Order #${order.order_id} already processed by pixel, skipping`);
+      console.log(`[WEBHOOK] Order #${order.id} already processed by pixel, skipping`);
       return res.status(200).send();
     }
 
@@ -3303,17 +3302,19 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
     formData.order_id = order.id;
     formData.webhook = true;
 
-    // TODO: Uncomment this when ready to process real orders
-    // Call /send-forms to process the order
-    // const response = await fetch(`http://localhost:${port}/send-forms`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ formData: formData })
-    // });
-    // const result = await response.json();
-    // console.log('[WEBHOOK] Processing result:', result);
+    const response = await fetch("https://magnolia-api.onrender.com/send-forms", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ formData: formData })
+    });
 
-    console.log(`[WEBHOOK] Order #${order.id} would be processed here (testing mode)`);
+    if (response.status === 200) {
+      console.log(`[WEBHOOK] Order #${order.id} processed successfully`);
+      localStorage.removeItem('formData');
+    }
+
     res.status(200).send();
   } catch (error) {
     console.error('[WEBHOOK] Error processing order:', error.message || error);
