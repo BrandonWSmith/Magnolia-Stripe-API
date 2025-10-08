@@ -749,6 +749,57 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 let ip;
 let hulkFormData;
 
+// Tracking system for pixel vs webhook
+const submissionTracking = {
+  pixel: 0,
+  webhook: 0,
+  duplicate: 0,
+  lastReset: new Date(),
+  processedOrders: new Map() // Map of email+orderNum -> { source, timestamp }
+};
+
+// Helper function to generate order ID
+function generateOrderId(formData) {
+  const email = formData.contact_email || formData.purchaser_email || 'unknown';
+  const timestamp = formData.order_number || Date.now();
+  return `${email}_${timestamp}`;
+}
+
+// Helper function to check and track submission
+function trackSubmission(formData, source) {
+  const orderId = generateOrderId(formData);
+  
+  if (submissionTracking.processedOrders.has(orderId)) {
+    submissionTracking.duplicate++;
+    const existing = submissionTracking.processedOrders.get(orderId);
+    console.log(`[DUPLICATE] Order ${orderId} already processed by ${existing.source} at ${existing.timestamp}`);
+    return { isDuplicate: true, existingSource: existing.source };
+  }
+  
+  submissionTracking.processedOrders.set(orderId, {
+    source: source,
+    timestamp: new Date().toISOString()
+  });
+  
+  if (source === 'pixel') {
+    submissionTracking.pixel++;
+  } else if (source === 'webhook') {
+    submissionTracking.webhook++;
+  }
+  
+  console.log(`[${source.toUpperCase()}] Processing order ${orderId} - Total: Pixel=${submissionTracking.pixel}, Webhook=${submissionTracking.webhook}, Duplicates=${submissionTracking.duplicate}`);
+  
+  // Clean up old entries (older than 24 hours) to prevent memory leak
+  const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+  for (const [key, value] of submissionTracking.processedOrders.entries()) {
+    if (new Date(value.timestamp).getTime() < oneDayAgo) {
+      submissionTracking.processedOrders.delete(key);
+    }
+  }
+  
+  return { isDuplicate: false };
+}
+
 app.post('/store-form-data', (req, res) => {
   const { formData } = req.body;
   ip = req.headers['x-forward-for'] || req.socket.remoteAddress;
@@ -3253,4 +3304,24 @@ app.post('/send-forms', async (req, res) => {
     }
   }
 });
+
+app.post('/shopify-webhook/orders-create', async (req, res) => {
+  const order = req.body;
+  console.log(order);
+  const formData = JSON.parse(order.note_attributes[0].value);
+
+  const delivery = order.shipping_lines && order.shipping_lines.length > 0 ? 'Delivery' : 'Pickup';
+  formData.delivery_method = delivery;
+
+  if (delivery === 'Delivery') {
+    formData.shipping_address = `${order.shipping_address.address1}, ${order.shipping_address.city}, ${order.shipping_address.province} ${order.shipping_address.zip}`;
+  }
+
+  formData.shipping = order.shipping_lines.price;
+  formData.sales_tax = order.total_tax;
+  formData.total_order = order.total_price;
+
+  console.log(formData);
+});
+
 app.listen(port, () => console.log(`Listening on port ${port}`));
