@@ -1370,6 +1370,8 @@ app.post('/send-forms', async (req, res) => {
     return res.status(500).json({message: 'There was an issue updating order notes in Shopify', data: shopifyData});
   }
 
+  console.log("Shopify update notes response: ", shopifyData);
+
   async function sendToGoogleSheet() {
     const auth = new GoogleAuth({
       keyFile: '/etc/secrets/google.json',
