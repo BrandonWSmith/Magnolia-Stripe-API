@@ -1346,7 +1346,7 @@ app.post('/send-forms', async (req, res) => {
 
   const updateNotesVariables = {
     'input': {
-      'id': formData.order_id,
+      'id': `gid://shopify/Order/${formData.order_id}`,
       'customAttributes': [
         {
           'key': 'formData',
@@ -1369,8 +1369,6 @@ app.post('/send-forms', async (req, res) => {
   if (!shopifyResponse.ok) {
     return res.status(500).json({message: 'There was an issue updating order notes in Shopify', data: shopifyData});
   }
-
-  console.log("Shopify update notes response: ", shopifyData);
 
   async function sendToGoogleSheet() {
     const auth = new GoogleAuth({
