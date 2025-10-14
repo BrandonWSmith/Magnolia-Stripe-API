@@ -1556,7 +1556,7 @@ app.post('/send-forms', async (req, res) => {
       "Roles": [
         {
           "RoleIndex": 1,
-          "SignerName": "${formData.contact_first_name}",
+          "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
           "SignerOrder": 1,
           "SignerEmail": "${formData.contact_email}",
           "SignerType": "Signer",
@@ -1980,7 +1980,7 @@ app.post('/send-forms', async (req, res) => {
       "Roles": [
         {
           "RoleIndex": 1,
-          "SignerName": "${formData.contact_first_name}",
+          "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
           "SignerOrder": 1,
           "SignerEmail": "${formData.contact_email}",
           "SignerType": "Signer",
@@ -2373,7 +2373,7 @@ app.post('/send-forms', async (req, res) => {
         },
         {
           "RoleIndex": 2,
-          "SignerName": "${formData.contact_first_name}",
+          "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
           "SignerOrder": 2,
           "SignerEmail": "${formData.contact_email}",
           "SignerType": "Signer",
@@ -2500,7 +2500,7 @@ app.post('/send-forms', async (req, res) => {
         "Roles": [
           {
             "RoleIndex": 1,
-            "SignerName": "${formData.contact_first_name}",
+            "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
             "SignerOrder": 1,
             "SignerEmail": "${formData.contact_email}",
             "SignerType": "Signer",
@@ -2771,7 +2771,7 @@ app.post('/send-forms', async (req, res) => {
           "Roles": [
             {
               "RoleIndex": 1,
-              "SignerName": "${formData.contact_first_name}",
+              "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
               "SignerOrder": 1,
               "SignerEmail": "${formData.contact_email}",
               "SignerType": "Signer",
@@ -3045,7 +3045,7 @@ app.post('/send-forms', async (req, res) => {
           "Roles": [
             {
               "RoleIndex": 1,
-              "SignerName": "${formData.contact_first_name}",
+              "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
               "SignerOrder": 1,
               "SignerEmail": "${formData.contact_email}",
               "SignerType": "Signer",
