@@ -1328,6 +1328,48 @@ app.post('/send-forms', async (req, res) => {
   const merchandiseDetails3 = formData.merchandise_3_details ? formData.merchandise_3_details.split(",") : null;
   const liability = formData.private_family_viewing_total > 0 || witnessCremation === "Selected";
 
+  const updateNotesQueryString = `mutation OrderUpdate($input: OrderInput!) {
+    orderUpdate(input: $input) {
+      order {
+        id
+        customAttributes {
+          key
+          value
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }`;
+
+  const updateNotesVariables = {
+    'input': {
+      'id': formData.order_id,
+      'customAttributes': [
+        {
+          'key': 'formData',
+          'value': JSON.stringify(formData)
+        }
+      ]
+    }
+  };
+
+  const shopifyResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+    method: 'POST',
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({queryString: updateNotesQueryString, variables: updateNotesVariables}),
+  });
+
+  const shopifyData = await shopifyResponse.json();
+
+  if (!shopifyResponse.ok) {
+    return res.status(500).json({message: 'There was an issue updating order notes in Shopify', data: shopifyData});
+  }
+
   async function sendToGoogleSheet() {
     const auth = new GoogleAuth({
       keyFile: '/etc/secrets/google.json',
