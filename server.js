@@ -3304,6 +3304,8 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
   if (order.source_name != 'web') {
     return res.status(200).send();
   }
+  
+  await new Promise(resolve => setTimeout(resolve, 5000));
 
   try {
     const auth = new GoogleAuth({
