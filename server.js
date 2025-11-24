@@ -903,64 +903,141 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
   const { first_name, last_name, phone, email, urgency, caseNumber } = req.body;
 
   try {
-    const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
-    customerSet(input: $input, identifier: $identifier) {
-        customer {
-          id
-          firstName
-          lastName
-          email
-          phone
-        }
-        userErrors {
-          field
-          message
+    // First, search for existing customer by email
+    const searchCustomerQueryString = `query {
+      customers(first: 1, query: "email:${email}") {
+        edges {
+          node {
+            id
+          }
         }
       }
     }`;
 
-    const setCustomerVariables = {
-      'input': {
-        'firstName': first_name,
-        'lastName': last_name,
-        'email': email,
-        'phone': phone
-      },
-      'identifier': {
-        'phone': phone
-      }
-    };
-
-    const setCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+    const searchCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({queryString: setCustomerQueryString, variables: setCustomerVariables}),
+      body: JSON.stringify({queryString: searchCustomerQueryString}),
     });
 
-    if (!setCustomerResponse.ok) {
-      const setCustomerError = await setCustomerResponse.json();
-      return res.status(500).json({message: 'There was an issue creating/updating customer in Shopify', data: setCustomerError});
-    }
+    const searchCustomerData = await searchCustomerResponse.json();
+    const existingCustomerId = searchCustomerData.data?.data?.customers?.edges?.[0]?.node?.id;
 
-    const setCustomerData = await setCustomerResponse.json();
+    let customerId;
 
-    if (setCustomerData.data?.customerSet?.userErrors?.length > 0) {
-      return res.status(500).json({
-        message: 'GraphQL errors in customer creation',
-        data: setCustomerData.data.customerSet.userErrors
+    if (existingCustomerId) {
+      // Customer exists - use customerUpdate instead
+      const updateCustomerQueryString = `mutation customerUpdate($input: CustomerInput!) {
+        customerUpdate(input: $input) {
+          customer {
+            id
+            firstName
+            lastName
+            email
+            phone
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`;
+
+      const updateCustomerVariables = {
+        'input': {
+          'id': existingCustomerId,
+          'firstName': first_name,
+          'lastName': last_name,
+          'phone': phone
+        }
+      };
+
+      const updateCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: updateCustomerQueryString, variables: updateCustomerVariables}),
       });
-    }
 
-    if (!setCustomerData.data?.data?.customerSet?.customer?.id) {
-      return res.status(500).json({
-        message: 'No customer ID returned from Shopify',
-        data: setCustomerData
+      if (!updateCustomerResponse.ok) {
+        const updateCustomerError = await updateCustomerResponse.json();
+        return res.status(500).json({message: 'There was an issue updating customer in Shopify', data: updateCustomerError});
+      }
+
+      const updateCustomerData = await updateCustomerResponse.json();
+
+      if (updateCustomerData.data?.customerUpdate?.userErrors?.length > 0) {
+        return res.status(500).json({
+          message: 'GraphQL errors in customer update',
+          data: updateCustomerData.data.customerUpdate.userErrors
+        });
+      }
+
+      customerId = existingCustomerId;
+    } else {
+      // No existing customer - create new one with customerSet
+      const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
+        customerSet(input: $input, identifier: $identifier) {
+          customer {
+            id
+            firstName
+            lastName
+            email
+            phone
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`;
+
+      const setCustomerVariables = {
+        'input': {
+          'firstName': first_name,
+          'lastName': last_name,
+          'email': email,
+          'phone': phone
+        },
+        'identifier': {
+          'email': email
+        }
+      };
+
+      const setCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: setCustomerQueryString, variables: setCustomerVariables}),
       });
-    }
 
-    const customerId = setCustomerData.data.data.customerSet.customer.id;
+      if (!setCustomerResponse.ok) {
+        const setCustomerError = await setCustomerResponse.json();
+        return res.status(500).json({message: 'There was an issue creating customer in Shopify', data: setCustomerError});
+      }
+
+      const setCustomerData = await setCustomerResponse.json();
+
+      if (setCustomerData.data?.customerSet?.userErrors?.length > 0) {
+        return res.status(500).json({
+          message: 'GraphQL errors in customer creation',
+          data: setCustomerData.data.customerSet.userErrors
+        });
+      }
+
+      if (!setCustomerData.data?.data?.customerSet?.customer?.id) {
+        return res.status(500).json({
+          message: 'No customer ID returned from Shopify',
+          data: setCustomerData
+        });
+      }
+
+      customerId = setCustomerData.data.data.customerSet.customer.id;
+    }
 
     const metafieldQueryString = `mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $metafields) {
