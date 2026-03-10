@@ -1721,7 +1721,7 @@ app.post('/send-forms', async (req, res) => {
             },
             {
               "Id": "witness_price",
-              "Value": "${formData.witness_cremation_total}"
+              "Value": "$${formData.witness_cremation_total}"
             },
             {
               "Id": "private_viewing_price", 
@@ -2145,7 +2145,7 @@ app.post('/send-forms', async (req, res) => {
             },
             {
               "Id": "witness_price",
-              "Value": "${formData.witness_cremation_total}"
+              "Value": "$${formData.witness_cremation_total}"
             },
             {
               "Id": "private_viewing_price", 
@@ -2665,7 +2665,7 @@ app.post('/send-forms', async (req, res) => {
               },
               {
                 "Id": "witness_price",
-                "Value": "${formData.witness_cremation_total}"
+                "Value": "$${formData.witness_cremation_total}"
               },
               {
                 "Id": "private_viewing_price", 
@@ -2936,7 +2936,7 @@ app.post('/send-forms', async (req, res) => {
                 },
                 {
                   "Id": "witness_price",
-                  "Value": "${formData.witness_cremation_total}"
+                  "Value": "$${formData.witness_cremation_total}"
                 },
                 {
                   "Id": "private_viewing_price", 
@@ -3210,7 +3210,7 @@ app.post('/send-forms', async (req, res) => {
                 },
                 {
                   "Id": "witness_price",
-                  "Value": "${formData.witness_cremation_total}"
+                  "Value": "$${formData.witness_cremation_total}"
                 },
                 {
                   "Id": "private_viewing_price", 
