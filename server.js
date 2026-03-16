@@ -1580,7 +1580,12 @@ app.post('/send-forms', async (req, res) => {
       "Id": "shipping_address",
       "Value": "${formData.shipping_address}"
     }`;
-  const labelsArray = [`"State: ${formData.deceased_state}"`, `"Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}"`, `"Order: ${formData.order_number}"`];
+  const labelState = formData.deceased_state === "Kentucky" ? "KY" : "IN";
+  const labelsJson = JSON.stringify([
+    `State: ${labelState}`,
+    `Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}`,
+    `Order: ${formData.order_number}`
+  ]);
 
   if (formData.service_package_type === "Immediate Need") {
     let unusedRoleIndices = [2, 3, 4, 5, 6];
@@ -2004,7 +2009,7 @@ app.post('/send-forms', async (req, res) => {
           ]
         }
       ],
-      "Labels": ${labelsArray}
+      "Labels": ${labelsJson}
     }`;
     
     if (liability) {
@@ -2061,7 +2066,7 @@ app.post('/send-forms', async (req, res) => {
           "SignerOrder": 1,
           "SignerEmail": "${formData.contact_email}",
           "SignerType": "Signer",
-          "Labels": ${labelsArray},
+          "Labels": ${labelsJson},
           "ExistingFormFields": [
             {
               "Id": "service_type",
@@ -2492,7 +2497,7 @@ app.post('/send-forms', async (req, res) => {
         }${nokPrefills.length > 0 ? `,
           ${nokPrefills.map(role => JSON.stringify(role))}` : ''}
       ],
-      "Labels": ${labelsArray}
+      "Labels": ${labelsJson}
     }`;
 
     if (liability) {
@@ -2582,7 +2587,7 @@ app.post('/send-forms', async (req, res) => {
             "SignerOrder": 1,
             "SignerEmail": "${formData.contact_email}",
             "SignerType": "Signer",
-            "Labels": ${labelsArray},
+            "Labels": ${labelsJson},
             "ExistingFormFields": [
               {
                 "Id": "service_type",
@@ -2854,7 +2859,7 @@ app.post('/send-forms', async (req, res) => {
               "SignerOrder": 1,
               "SignerEmail": "${formData.contact_email}",
               "SignerType": "Signer",
-              "Labels": ${labelsArray},
+              "Labels": ${labelsJson},
               "ExistingFormFields": [
                 {
                   "Id": "service_type",
@@ -3129,7 +3134,7 @@ app.post('/send-forms', async (req, res) => {
               "SignerOrder": 1,
               "SignerEmail": "${formData.contact_email}",
               "SignerType": "Signer",
-              "Labels": ${labelsArray},
+              "Labels": ${labelsJson},
               "ExistingFormFields": [
                 {
                   "Id": "service_type",
