@@ -1583,7 +1583,7 @@ app.post('/send-forms', async (req, res) => {
   const labelState = formData.deceased_state === "Kentucky" ? "KY" : "IN";
   const labelsJson = JSON.stringify([
     `${labelState}`,
-    `${formData.deceased_first_name} ${formData.deceased_last_name}`,
+    `${formData.deceased_first_name}.${formData.deceased_last_name}`,
     `${formData.order_number}`
   ]);
 
