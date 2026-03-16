@@ -1580,7 +1580,7 @@ app.post('/send-forms', async (req, res) => {
       "Id": "shipping_address",
       "Value": "${formData.shipping_address}"
     }`;
-  const labelsArray = [`State: ${formData.deceased_state}`, `Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}`, `Order: ${formData.order_number}`];
+  const labelsArray = [`"State: ${formData.deceased_state}"`, `"Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}"`, `"Order: ${formData.order_number}"`];
 
   if (formData.service_package_type === "Immediate Need") {
     let unusedRoleIndices = [2, 3, 4, 5, 6];
