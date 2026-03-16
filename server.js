@@ -1582,9 +1582,9 @@ app.post('/send-forms', async (req, res) => {
     }`;
   const labelState = formData.deceased_state === "Kentucky" ? "KY" : "IN";
   const labelsJson = JSON.stringify([
-    `State: ${labelState}`,
-    `Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}`,
-    `Order: ${formData.order_number}`
+    `${labelState}`,
+    `${formData.deceased_first_name} ${formData.deceased_last_name}`,
+    `${formData.order_number}`
   ]);
 
   if (formData.service_package_type === "Immediate Need") {
