@@ -2003,7 +2003,7 @@ app.post('/send-forms', async (req, res) => {
           ]
         }
       ],
-      "Labels": ["State: ${formData.deceased_state}", Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}, Order: ${formData.order_number}],
+      "Labels": ["State: ${formData.deceased_state}", "Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}", "Order: ${formData.order_number}"],
       "RoleRemovalIndices": [${unusedRoleIndices}]
     }`;
     
@@ -2061,7 +2061,7 @@ app.post('/send-forms', async (req, res) => {
           "SignerOrder": 1,
           "SignerEmail": "${formData.contact_email}",
           "SignerType": "Signer",
-          "Labels": ["State: ${formData.deceased_state}", Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}, Order: ${formData.order_number}],
+          "Labels": ["State: ${formData.deceased_state}", "Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}", "Order: ${formData.order_number}"],
           "ExistingFormFields": [
             {
               "Id": "service_type",
@@ -2492,7 +2492,7 @@ app.post('/send-forms', async (req, res) => {
         }${nokPrefills.length > 0 ? `,
           ${nokPrefills.map(role => JSON.stringify(role))}` : ''}
       ],
-      "Labels": ["State: ${formData.deceased_state}", Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}, Order: ${formData.order_number}],
+      "Labels": ["State: ${formData.deceased_state}", "Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}", "Order: ${formData.order_number}"],
       "RoleRemovalIndices": [${unusedRoleIndices}]
     }`;
 
@@ -2583,7 +2583,7 @@ app.post('/send-forms', async (req, res) => {
             "SignerOrder": 1,
             "SignerEmail": "${formData.contact_email}",
             "SignerType": "Signer",
-            "Labels": ["State: ${formData.deceased_state}", Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}, Order: ${formData.order_number}],
+            "Labels": ["State: ${formData.deceased_state}", "Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}", "Order: ${formData.order_number}"],
             "ExistingFormFields": [
               {
                 "Id": "service_type",
@@ -2855,7 +2855,7 @@ app.post('/send-forms', async (req, res) => {
               "SignerOrder": 1,
               "SignerEmail": "${formData.contact_email}",
               "SignerType": "Signer",
-              "Labels": ["State: ${formData.deceased_state}", Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}, Order: ${formData.order_number}],
+              "Labels": ["State: ${formData.deceased_state}", "Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}", "Order: ${formData.order_number}"],
               "ExistingFormFields": [
                 {
                   "Id": "service_type",
@@ -3130,7 +3130,7 @@ app.post('/send-forms', async (req, res) => {
               "SignerOrder": 1,
               "SignerEmail": "${formData.contact_email}",
               "SignerType": "Signer",
-              "Labels": ["State: ${formData.deceased_state}", Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}, Order: ${formData.order_number}],
+              "Labels": ["State: ${formData.deceased_state}", "Decendant: ${formData.deceased_first_name} ${formData.deceased_last_name}", "Order: ${formData.order_number}"],
               "ExistingFormFields": [
                 {
                   "Id": "service_type",
