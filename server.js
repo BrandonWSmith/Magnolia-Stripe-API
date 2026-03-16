@@ -1584,7 +1584,7 @@ app.post('/send-forms', async (req, res) => {
   const labelsJson = JSON.stringify([
     `${labelState}`,
     `${formData.deceased_first_name}.${formData.deceased_last_name}`,
-    `${formData.order_number}`
+    `Order#${formData.order_number}`
   ]);
 
   if (formData.service_package_type === "Immediate Need") {
