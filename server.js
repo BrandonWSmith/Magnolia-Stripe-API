@@ -1586,53 +1586,32 @@ app.post('/send-forms', async (req, res) => {
     `${formData.deceased_first_name}.${formData.deceased_last_name}`,
     `Order#${formData.order_number}`
   ]);
+  const nextOfKinSigners = Array.from({ length: 5 }, (_, index) => ({
+    index,
+    fullName: formData[`next_of_kin_${index}_full_name`]?.trim(),
+    email: formData[`next_of_kin_${index}_email`]?.trim(),
+    relationship: formData[`next_of_kin_${index}_relationship`] || ''
+  })).filter(({ fullName, email }) => fullName && email);
 
   if (formData.service_package_type === "Immediate Need") {
-    let unusedRoleIndices = [2, 3, 4, 5, 6];
-    Object.keys(formData).forEach(key => {
-      switch (key) {
-        case "next_of_kin_0_email":
-          nokCount++;
-          unusedRoleIndices = unusedRoleIndices.filter(index => index != 2);
-          break;
-        case "next_of_kin_1_email":
-          nokCount++;
-          unusedRoleIndices = unusedRoleIndices.filter(index => index != 3);
-          break;
-        case "next_of_kin_2_email":
-          nokCount++;
-          unusedRoleIndices = unusedRoleIndices.filter(index => index != 4);
-          break;
-        case "next_of_kin_3_email":
-          nokCount++;
-          unusedRoleIndices = unusedRoleIndices.filter(index => index != 5);
-          break;
-        case "next_of_kin_4_email":
-          nokCount++;
-          unusedRoleIndices = unusedRoleIndices.filter(index => index != 6);
-          break;
-        default:
-          break;
-      }
-    });
-
-    const nokPrefills = [];
-    for (let i = 0; i < nokCount; i++) {
-      const prefillData = {
-        "RoleIndex": i + 2,
-        "SignerName": formData[`next_of_kin_${i}_full_name`],
-        "SignerOrder": i + 2,
-        "SignerEmail": formData[`next_of_kin_${i}_email`],
-        "SignerType": "Signer",
-        "ExistingFormFields": [
-          {
-            "Id": `nextofkin_relationship_${i}`,
-            "Value": formData[`next_of_kin_${i}_relationship`]
-          }
-        ]
-      };
-      nokPrefills.push(prefillData);
-    }
+    const nokPrefills = nextOfKinSigners.map(({ index, fullName, email, relationship }, signerOffset) => ({
+      "RoleIndex": signerOffset + 2,
+      "SignerName": fullName,
+      "SignerOrder": signerOffset + 2,
+      "SignerEmail": email,
+      "SignerType": "Signer",
+      "ExistingFormFields": [
+        {
+          "Id": `nextofkin_relationship_${index}`,
+          "Value": relationship
+        }
+      ]
+    }));
+    nokCount = nokPrefills.length;
+    const roleRemovalIndices = Array.from(
+      { length: Math.max(0, 6 - (2 + nokCount)) },
+      (_, offset) => 3 + nokCount + offset
+    );
 
     const body = `{
       "Roles": [
@@ -2009,6 +1988,7 @@ app.post('/send-forms', async (req, res) => {
           ]
         }
       ],
+      "RoleRemovalIndices": ${JSON.stringify(roleRemovalIndices)},
       "Labels": ${labelsJson}
     }`;
     
@@ -2395,55 +2375,28 @@ app.post('/send-forms', async (req, res) => {
       ]
     }`;
 
-    let unusedRoleIndices = [3, 4, 5, 6, 7];
-    Object.keys(formData).forEach(key => {
-      switch (key) {
-        case "next_of_kin_0_email":
-          nokCount++;
-          unusedRoleIndices = unusedRoleIndices.filter(index => index != 3);
-          break;
-        case "next_of_kin_1_email":
-          nokCount++;
-          unusedRoleIndices = unusedRoleIndices.filter(index => index != 4);
-          break;
-        case "next_of_kin_2_email":
-          nokCount++;
-          unusedRoleIndices = unusedRoleIndices.filter(index => index != 5);
-          break;
-        case "next_of_kin_3_email":
-          nokCount++;
-          unusedRoleIndices = unusedRoleIndices.filter(index => index != 6);
-          break;
-        case "next_of_kin_4_email":
-          nokCount++;
-          unusedRoleIndices = unusedRoleIndices.filter(index => index != 7);
-          break;
-        default:
-          break;
-      }
-    });
-
-    const nokPrefills = [];
-    for (let i = 0; i < nokCount; i++) {
-      const prefillData = {
-        "RoleIndex": i + 3,
-        "SignerName": formData[`next_of_kin_${i}_full_name`],
-        "SignerOrder": i + 3,
-        "SignerEmail": formData[`next_of_kin_${i}_email`],
-        "SignerType": "Signer",
-        "ExistingFormFields": [
-          {
-            "Id": `nextofkin_name_${i}`,
-            "Value": formData[`next_of_kin_${i}_full_name`]
-          },
-          {
-            "Id": `nextofkin_relationship_${i}`,
-            "Value": formData[`next_of_kin_${i}_relationship`]
-          }
-        ]
-      };
-      nokPrefills.push(prefillData);
-    }
+    const nokPrefills = nextOfKinSigners.map(({ index, fullName, email, relationship }, signerOffset) => ({
+      "RoleIndex": signerOffset + 3,
+      "SignerName": fullName,
+      "SignerOrder": signerOffset + 3,
+      "SignerEmail": email,
+      "SignerType": "Signer",
+      "ExistingFormFields": [
+        {
+          "Id": `nextofkin_name_${index}`,
+          "Value": fullName
+        },
+        {
+          "Id": `nextofkin_relationship_${index}`,
+          "Value": relationship
+        }
+      ]
+    }));
+    nokCount = nokPrefills.length;
+    const roleRemovalIndices = Array.from(
+      { length: Math.max(0, 7 - (2 + nokCount)) },
+      (_, offset) => 3 + nokCount + offset
+    );
 
     const cremAuthBody = `{
       "Roles": [
@@ -2497,6 +2450,7 @@ app.post('/send-forms', async (req, res) => {
         }${nokPrefills.length > 0 ? `,
           ${nokPrefills.map(role => JSON.stringify(role))}` : ''}
       ],
+      "RoleRemovalIndices": ${JSON.stringify(roleRemovalIndices)},
       "Labels": ${labelsJson}
     }`;
 
