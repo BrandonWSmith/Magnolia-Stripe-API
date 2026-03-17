@@ -1583,8 +1583,8 @@ app.post('/send-forms', async (req, res) => {
   const labelState = formData.deceased_state === "Kentucky" || formData.deceased_state === "KY" ? "KY" : "IN";
   const labelsJson = JSON.stringify([
     `${labelState}`,
-    `${formData.deceased_first_name}.${formData.deceased_last_name}`,
-    `Order#${formData.order_number}`
+    `${formData.deceased_first_name.trim()}.${formData.deceased_last_name.trim()}`,
+    `${formData.order_number}`
   ]);
   const nextOfKinSigners = Array.from({ length: 5 }, (_, index) => ({
     index,
