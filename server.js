@@ -1609,8 +1609,9 @@ app.post('/send-forms', async (req, res) => {
     }));
     nokCount = nokPrefills.length;
     const magnoliaRoleIndex = 2 + nokCount;
+    const maxImmediateNeedRoleIndex = 7;
     const roleRemovalIndices = Array.from(
-      { length: Math.max(0, 6 - magnoliaRoleIndex) },
+      { length: Math.max(0, maxImmediateNeedRoleIndex - magnoliaRoleIndex) },
       (_, offset) => magnoliaRoleIndex + 1 + offset
     );
 
