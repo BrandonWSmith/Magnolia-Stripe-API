@@ -1608,9 +1608,10 @@ app.post('/send-forms', async (req, res) => {
       ]
     }));
     nokCount = nokPrefills.length;
+    const magnoliaRoleIndex = 7;
     const roleRemovalIndices = Array.from(
-      { length: Math.max(0, 6 - (2 + nokCount)) },
-      (_, offset) => 3 + nokCount + offset
+      { length: Math.max(0, 5 - nokCount) },
+      (_, offset) => 2 + nokCount + offset
     );
 
     const body = `{
@@ -1971,9 +1972,9 @@ app.post('/send-forms', async (req, res) => {
           ]
         },
         ${nokPrefills.length > 0 ? `${nokPrefills.map(role => JSON.stringify(role))},` : ''}{
-          "RoleIndex": ${2 + nokCount},
+          "RoleIndex": ${magnoliaRoleIndex},
           "SignerName": "Magnolia Cremations",
-          "SignerOrder": ${2 + nokCount},
+          "SignerOrder": ${magnoliaRoleIndex},
           "SignerEmail": "orders@magnoliacremations.com",
           "SignerType": "Signer",
           "ExistingFormFields": [
