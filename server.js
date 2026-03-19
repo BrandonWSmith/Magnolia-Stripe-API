@@ -1608,10 +1608,10 @@ app.post('/send-forms', async (req, res) => {
       ]
     }));
     nokCount = nokPrefills.length;
-    const magnoliaRoleIndex = 7;
+    const magnoliaRoleIndex = 2 + nokCount;
     const roleRemovalIndices = Array.from(
-      { length: Math.max(0, 5 - nokCount) },
-      (_, offset) => 2 + nokCount + offset
+      { length: Math.max(0, 6 - magnoliaRoleIndex) },
+      (_, offset) => magnoliaRoleIndex + 1 + offset
     );
 
     const body = `{
