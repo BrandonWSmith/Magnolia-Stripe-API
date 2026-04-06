@@ -1397,11 +1397,11 @@ app.post('/send-forms', async (req, res) => {
   const { formData } = req.body;
   const boldSignApiKey = process.env.BOLDSIGN_API_KEY;
 
-  const urnDetails = formData.urn_details ? formData.urn_details.replaceAll(/\\"/g, "").split(",") : null;
-  const merchandiseDetails0 = formData.merchandise_0_details ? formData.merchandise_0_details.replaceAll(/\\"/g, "").split(",") : null;
-  const merchandiseDetails1 = formData.merchandise_1_details ? formData.merchandise_1_details.replaceAll(/\\"/g, "").split(",") : null;
-  const merchandiseDetails2 = formData.merchandise_2_details ? formData.merchandise_2_details.replaceAll(/\\"/g, "").split(",") : null;
-  const merchandiseDetails3 = formData.merchandise_3_details ? formData.merchandise_3_details.replaceAll(/\\"/g, "").split(",") : null;
+  const urnDetails = formData.urn_details ? formData.urn_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
+  const merchandiseDetails0 = formData.merchandise_0_details ? formData.merchandise_0_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
+  const merchandiseDetails1 = formData.merchandise_1_details ? formData.merchandise_1_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
+  const merchandiseDetails2 = formData.merchandise_2_details ? formData.merchandise_2_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
+  const merchandiseDetails3 = formData.merchandise_3_details ? formData.merchandise_3_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
   const liability = formData.private_family_viewing_total > 0 || formData.witness_cremation_total > 0;
 
   const updateNotesQueryString = `mutation OrderUpdate($input: OrderInput!) {
