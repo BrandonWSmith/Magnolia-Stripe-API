@@ -13,6 +13,69 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
 
+const getOperationHint = (queryString = '') => {
+  if (!queryString || typeof queryString !== 'string') {
+    return 'unknown';
+  }
+
+  const normalized = queryString.replace(/\s+/g, ' ').trim();
+  const match = normalized.match(/(?:mutation|query)\s+([A-Za-z0-9_]+)/i);
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  return normalized.slice(0, 100);
+};
+
+const collectUserErrors = (value, path = 'data', results = [], _depth = 0) => {
+  if (_depth > 8) return results;
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectUserErrors(item, `${path}[${index}]`, results, _depth + 1));
+    return results;
+  }
+
+  if (!value || typeof value !== 'object') {
+    return results;
+  }
+
+  Object.entries(value).forEach(([key, nestedValue]) => {
+    const nestedPath = `${path}.${key}`;
+    if (key === 'userErrors' && Array.isArray(nestedValue) && nestedValue.length > 0) {
+      results.push({ path: nestedPath, count: nestedValue.length, errors: nestedValue });
+    }
+    collectUserErrors(nestedValue, nestedPath, results, _depth + 1);
+  });
+
+  return results;
+};
+
+const summarizeShopifyErrorPayload = (payload) => {
+  if (!payload || typeof payload !== 'object') {
+    return payload;
+  }
+
+  return {
+    errors: payload?.errors || payload?.data?.errors,
+    userErrors:
+      payload?.data?.userErrors ||
+      payload?.data?.data?.orderUpdate?.userErrors ||
+      payload?.data?.orderUpdate?.userErrors,
+  };
+};
+
+const getBoldSignSummary = (data) => {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+
+  return {
+    id: data.id || data.documentId,
+    message: data.message || data.errorMessage,
+    status: data.status,
+  };
+};
+
 app.use(cors({
   origin: '*',
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -225,6 +288,13 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
 
 app.post('/shopify-admin-api', async (req, res) => {
   const { queryString, variables } = req.body;
+  const operationHint = getOperationHint(queryString);
+  console.log('[SHOPIFY_ADMIN_API] Request start', {
+    route: '/shopify-admin-api',
+    operationHint,
+    hasVariables: !!variables,
+  });
+
   const shopify = shopifyApi({
     apiVersion: LATEST_API_VERSION,
     apiKey: process.env.SHOPIFY_API_KEY,
@@ -253,9 +323,32 @@ app.post('/shopify-admin-api', async (req, res) => {
       variables: variables,
     });
 
+    try {
+      const userErrors = collectUserErrors(data, 'response');
+      if (userErrors.length > 0) {
+        console.warn('[SHOPIFY_ADMIN_API] GraphQL userErrors returned', {
+          route: '/shopify-admin-api',
+          operationHint,
+          userErrors,
+        });
+      }
+      console.log('[SHOPIFY_ADMIN_API] Request success', {
+        route: '/shopify-admin-api',
+        operationHint,
+        userErrorGroupCount: userErrors.length,
+      });
+    } catch (_logErr) {
+      // Logging must never interrupt a successful response
+    }
+
     res.json({data: data});
   } catch (e) {
-    console.log(e.response.body);
+    console.error('[SHOPIFY_ADMIN_API] Request error', {
+      route: '/shopify-admin-api',
+      operationHint,
+      error: e?.message,
+      responseSummary: summarizeShopifyErrorPayload(e?.response?.body),
+    });
     res.status(400).json({data: e});
   }
 });
@@ -398,10 +491,20 @@ app.post('/create-payment-intent', async (req, res) => {
 });
 
 app.post('/update-payment-intent', async (req, res) => {
+  const { paymentIntentId, metadata, price } = req.body;
+  console.log('[UPDATE_PAYMENT_INTENT] Request start', {
+    route: '/update-payment-intent',
+    paymentIntentId,
+    hasMetadata: !!metadata,
+    hasPrice: price !== undefined,
+  });
+
   try {
-    const { paymentIntentId, metadata, price } = req.body;
-    
     if (!paymentIntentId || paymentIntentId === '') {
+      console.warn('[UPDATE_PAYMENT_INTENT] Request rejected', {
+        route: '/update-payment-intent',
+        reason: 'missing_payment_intent_id',
+      });
       return res.status(400).json({ error: 'Valid payment intent ID is required' });
     }
 
@@ -432,18 +535,36 @@ app.post('/update-payment-intent', async (req, res) => {
       paymentIntentId,
       updateParams
     );
+
+    console.log('[UPDATE_PAYMENT_INTENT] Request success', {
+      route: '/update-payment-intent',
+      paymentIntentId: updatedPaymentIntent.id,
+    });
     
     res.json({ success: true, paymentIntent: updatedPaymentIntent });
   } catch (error) {
-    console.error('Error updating payment intent:', error);
+    console.error('[UPDATE_PAYMENT_INTENT] Request error', {
+      route: '/update-payment-intent',
+      paymentIntentId,
+      message: error?.message,
+      stack: error?.stack,
+    });
     res.status(400).json({ error: error.message });
   }
 });
 
 app.post('/prepare-payment', async (req, res) => {
-  try {
-    const { paymentIntentId, paymentMethodId, amount } = req.body;
+  const { paymentIntentId, paymentMethodId, amount } = req.body;
+  const paymentMethodIdMasked = paymentMethodId ? `${paymentMethodId.slice(0, 6)}***` : null;
 
+  console.log('[PREPARE_PAYMENT] Request start', {
+    route: '/prepare-payment',
+    paymentIntentId,
+    paymentMethodId: paymentMethodIdMasked,
+    amount,
+  });
+
+  try {
     // Attach the PaymentMethod to the PaymentIntent
     await stripe.paymentIntents.update(
       paymentIntentId,
@@ -473,6 +594,13 @@ app.post('/prepare-payment', async (req, res) => {
       isInstantVerification = false;
     }
 
+    console.log('[PREPARE_PAYMENT] Request success', {
+      route: '/prepare-payment',
+      paymentIntentId,
+      insufficientFunds,
+      isInstantVerification,
+    });
+
     res.json({ 
       success: true, 
       insufficientFunds, 
@@ -480,7 +608,12 @@ app.post('/prepare-payment', async (req, res) => {
       isInstantVerification
     });
   } catch (error) {
-    console.error('Error in prepare-payment:', error);
+    console.error('[PREPARE_PAYMENT] Request error', {
+      route: '/prepare-payment',
+      paymentIntentId,
+      message: error?.message,
+      stack: error?.stack,
+    });
     res.status(400).json({ error: error.message });
   }
 });
@@ -1396,6 +1529,32 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 app.post('/send-forms', async (req, res) => {
   const { formData } = req.body;
   const boldSignApiKey = process.env.BOLDSIGN_API_KEY;
+  const sendFormsContext = {
+    route: '/send-forms',
+    order_id: formData?.order_id,
+    order_number: formData?.order_number,
+    contact_email: formData?.contact_email,
+    paymentIntentId: formData?.paymentIntentId || formData?.payment_intent_id,
+  };
+  const sendFormsLog = (step, details = {}) => {
+    console.log(`[SEND_FORMS] ${step}`, {
+      ...sendFormsContext,
+      ...details,
+    });
+  };
+  const sendFormsErrorLog = (step, error, details = {}) => {
+    console.error(`[SEND_FORMS] ${step}`, {
+      ...sendFormsContext,
+      ...details,
+      message: error?.message || error,
+      stack: error?.stack,
+    });
+  };
+
+  sendFormsLog('Request start', {
+    service_package_type: formData?.service_package_type,
+    deceased_state: formData?.deceased_state,
+  });
 
   const urnDetails = formData.urn_details ? formData.urn_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
   const merchandiseDetails0 = formData.merchandise_0_details ? formData.merchandise_0_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
@@ -1432,6 +1591,10 @@ app.post('/send-forms', async (req, res) => {
     }
   };
 
+  sendFormsLog('Shopify notes update start', {
+    shopify_order_gid: `gid://shopify/Order/${formData.order_id}`,
+  });
+
   const shopifyResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
     method: 'POST',
     headers: {
@@ -1442,7 +1605,17 @@ app.post('/send-forms', async (req, res) => {
 
   const shopifyData = await shopifyResponse.json();
 
+  sendFormsLog('Shopify notes update result', {
+    ok: shopifyResponse.ok,
+    status: shopifyResponse.status,
+    hasData: !!shopifyData,
+  });
+
   if (!shopifyResponse.ok) {
+    sendFormsErrorLog('Shopify notes update failed', null, {
+      status: shopifyResponse.status,
+      responseSummary: summarizeShopifyErrorPayload(shopifyData),
+    });
     return res.status(500).json({message: 'There was an issue updating order notes in Shopify', data: shopifyData});
   }
 
@@ -1549,6 +1722,7 @@ app.post('/send-forms', async (req, res) => {
     }
 
     try {
+      sendFormsLog('Google Sheets append start');
       const results = await service.spreadsheets.values.append({
         spreadsheetId,
         range,
@@ -1557,17 +1731,30 @@ app.post('/send-forms', async (req, res) => {
         resource
       });
 
+      sendFormsLog('Google Sheets append result', {
+        ok: results.status === 200,
+        status: results.status,
+        updatedRange: results?.data?.updates?.updatedRange,
+      });
+
       if (results.status != 200) {
+        sendFormsErrorLog('Google Sheets append non-OK result', null, {
+          status: results.status,
+        });
         return res.json({message: 'There was an issue sending data to Google Sheets', data: results});
       }
 
       return results;
     } catch (error) {
+      sendFormsErrorLog('Google Sheets append error', error);
       return res.json({message: 'There was an issue sending data to Google Sheets', data: error.message || error});
     }
   }
 
   const googleSheetsData = await sendToGoogleSheet();
+  sendFormsLog('Google Sheets append finished', {
+    returnedStatus: googleSheetsData?.status,
+  });
 
   let nokCount = 0;
   const witnessing = `
@@ -2015,6 +2202,10 @@ app.post('/send-forms', async (req, res) => {
     
     if (liability) {
       try {
+        sendFormsLog('BoldSign request start', {
+          step: 'immediate_need_primary_liability',
+          templateId: '8bcbdc10-3630-4a14-8884-1b96480ca07c',
+        });
         const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=8bcbdc10-3630-4a14-8884-1b96480ca07c", {
           method: "POST",
           headers: {
@@ -2026,17 +2217,41 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const data = await response.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'immediate_need_primary_liability',
+          templateId: '8bcbdc10-3630-4a14-8884-1b96480ca07c',
+          ok: response.ok,
+          status: response.status,
+          responseSummary: getBoldSignSummary(data),
+        });
 
         if (!response.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'immediate_need_primary_liability',
+            templateId: '8bcbdc10-3630-4a14-8884-1b96480ca07c',
+            status: response.status,
+            responseSummary: getBoldSignSummary(data),
+          });
           return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
         }
 
+        sendFormsLog('Request success', {
+          step: 'complete',
+        });
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
+        sendFormsErrorLog('BoldSign request exception', error, {
+          step: 'immediate_need_primary_liability',
+          templateId: '8bcbdc10-3630-4a14-8884-1b96480ca07c',
+        });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
     } else {
       try {
+        sendFormsLog('BoldSign request start', {
+          step: 'immediate_need_primary_no_liability',
+          templateId: 'a49e2fce-576f-4198-a31e-c41acb80e60e',
+        });
         const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=a49e2fce-576f-4198-a31e-c41acb80e60e", {
           method: "POST",
           headers: {
@@ -2048,13 +2263,33 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const data = await response.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'immediate_need_primary_no_liability',
+          templateId: 'a49e2fce-576f-4198-a31e-c41acb80e60e',
+          ok: response.ok,
+          status: response.status,
+          responseSummary: getBoldSignSummary(data),
+        });
 
         if (!response.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'immediate_need_primary_no_liability',
+            templateId: 'a49e2fce-576f-4198-a31e-c41acb80e60e',
+            status: response.status,
+            responseSummary: getBoldSignSummary(data),
+          });
           return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
         }
 
+        sendFormsLog('Request success', {
+          step: 'complete',
+        });
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
+        sendFormsErrorLog('BoldSign request exception', error, {
+          step: 'immediate_need_primary_no_liability',
+          templateId: 'a49e2fce-576f-4198-a31e-c41acb80e60e',
+        });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
     }
@@ -2504,6 +2739,10 @@ app.post('/send-forms', async (req, res) => {
 
     if (liability) {
       try {
+        sendFormsLog('BoldSign request start', {
+          step: 'passing_soon_sgs_vital_liability',
+          templateId: 'fca14583-fc27-401a-af74-2e9e8b3f02af',
+        });
         const sgsAndVitalResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=fca14583-fc27-401a-af74-2e9e8b3f02af", {
           method: "POST",
           headers: {
@@ -2515,11 +2754,28 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const sgsAndVitalData = await sgsAndVitalResponse.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'passing_soon_sgs_vital_liability',
+          templateId: 'fca14583-fc27-401a-af74-2e9e8b3f02af',
+          ok: sgsAndVitalResponse.ok,
+          status: sgsAndVitalResponse.status,
+          responseSummary: getBoldSignSummary(sgsAndVitalData),
+        });
 
         if (!sgsAndVitalResponse.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'passing_soon_sgs_vital_liability',
+            templateId: 'fca14583-fc27-401a-af74-2e9e8b3f02af',
+            status: sgsAndVitalResponse.status,
+            responseSummary: getBoldSignSummary(sgsAndVitalData),
+          });
           return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, body: sgsAndVitalBody});
         }
 
+        sendFormsLog('BoldSign request start', {
+          step: 'passing_soon_crem_auth_liability',
+          templateId: '886f8e77-1140-4efb-aab5-c554fbb4f65a',
+        });
         const cremAuthResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=886f8e77-1140-4efb-aab5-c554fbb4f65a", {
           method: "POST",
           headers: {
@@ -2531,17 +2787,40 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const cremAuthData = await cremAuthResponse.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'passing_soon_crem_auth_liability',
+          templateId: '886f8e77-1140-4efb-aab5-c554fbb4f65a',
+          ok: cremAuthResponse.ok,
+          status: cremAuthResponse.status,
+          responseSummary: getBoldSignSummary(cremAuthData),
+        });
 
         if (!cremAuthResponse.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'passing_soon_crem_auth_liability',
+            templateId: '886f8e77-1140-4efb-aab5-c554fbb4f65a',
+            status: cremAuthResponse.status,
+            responseSummary: getBoldSignSummary(cremAuthData),
+          });
           return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, body: cremAuthBody});
         }
 
+        sendFormsLog('Request success', {
+          step: 'complete',
+        });
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
+        sendFormsErrorLog('BoldSign request exception', error, {
+          step: 'passing_soon_liability',
+        });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
       }
     } else {
       try {
+        sendFormsLog('BoldSign request start', {
+          step: 'passing_soon_sgs_vital_no_liability',
+          templateId: '8c83f1c7-b40f-47d4-a03d-5b530b6bb0ae',
+        });
         const sgsAndVitalResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=8c83f1c7-b40f-47d4-a03d-5b530b6bb0ae", {
           method: "POST",
           headers: {
@@ -2553,11 +2832,28 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const sgsAndVitalData = await sgsAndVitalResponse.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'passing_soon_sgs_vital_no_liability',
+          templateId: '8c83f1c7-b40f-47d4-a03d-5b530b6bb0ae',
+          ok: sgsAndVitalResponse.ok,
+          status: sgsAndVitalResponse.status,
+          responseSummary: getBoldSignSummary(sgsAndVitalData),
+        });
 
         if (!sgsAndVitalResponse.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'passing_soon_sgs_vital_no_liability',
+            templateId: '8c83f1c7-b40f-47d4-a03d-5b530b6bb0ae',
+            status: sgsAndVitalResponse.status,
+            responseSummary: getBoldSignSummary(sgsAndVitalData),
+          });
           return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, body: sgsAndVitalBody});
         }
 
+        sendFormsLog('BoldSign request start', {
+          step: 'passing_soon_crem_auth_no_liability',
+          templateId: '23932329-d871-412c-98b6-492d57aabf88',
+        });
         const cremAuthResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=23932329-d871-412c-98b6-492d57aabf88", {
           method: "POST",
           headers: {
@@ -2569,13 +2865,32 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const cremAuthData = await cremAuthResponse.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'passing_soon_crem_auth_no_liability',
+          templateId: '23932329-d871-412c-98b6-492d57aabf88',
+          ok: cremAuthResponse.ok,
+          status: cremAuthResponse.status,
+          responseSummary: getBoldSignSummary(cremAuthData),
+        });
 
         if (!cremAuthResponse.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'passing_soon_crem_auth_no_liability',
+            templateId: '23932329-d871-412c-98b6-492d57aabf88',
+            status: cremAuthResponse.status,
+            responseSummary: getBoldSignSummary(cremAuthData),
+          });
           return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, body: cremAuthBody});
         }
 
+        sendFormsLog('Request success', {
+          step: 'complete',
+        });
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
+        sendFormsErrorLog('BoldSign request exception', error, {
+          step: 'passing_soon_no_liability',
+        });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
       }
     }
@@ -2831,6 +3146,10 @@ app.post('/send-forms', async (req, res) => {
       }`;
 
       try {
+        sendFormsLog('BoldSign request start', {
+          step: 'planning_ahead_indiana',
+          templateId: '775c8725-e1f9-47b2-874c-be69e7f51de1',
+        });
         const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=775c8725-e1f9-47b2-874c-be69e7f51de1", {
           method: "POST",
           headers: {
@@ -2842,13 +3161,33 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const data = await response.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'planning_ahead_indiana',
+          templateId: '775c8725-e1f9-47b2-874c-be69e7f51de1',
+          ok: response.ok,
+          status: response.status,
+          responseSummary: getBoldSignSummary(data),
+        });
 
         if (!response.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'planning_ahead_indiana',
+            templateId: '775c8725-e1f9-47b2-874c-be69e7f51de1',
+            status: response.status,
+            responseSummary: getBoldSignSummary(data),
+          });
           return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
         }
 
+        sendFormsLog('Request success', {
+          step: 'complete',
+        });
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
+        sendFormsErrorLog('BoldSign request exception', error, {
+          step: 'planning_ahead_indiana',
+          templateId: '775c8725-e1f9-47b2-874c-be69e7f51de1',
+        });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
     } else if (formData.deceased_state === "Kentucky") {
@@ -3107,6 +3446,10 @@ app.post('/send-forms', async (req, res) => {
         }`;
         
         try {
+          sendFormsLog('BoldSign request start', {
+            step: 'planning_ahead_kentucky_loved_one',
+            templateId: 'a01c1cff-d4d0-4c6f-81a3-933c5f67a39f',
+          });
           const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=a01c1cff-d4d0-4c6f-81a3-933c5f67a39f", {
             method: "POST",
             headers: {
@@ -3118,13 +3461,33 @@ app.post('/send-forms', async (req, res) => {
           });
 
           const data = await response.json();
+          sendFormsLog('BoldSign request result', {
+            step: 'planning_ahead_kentucky_loved_one',
+            templateId: 'a01c1cff-d4d0-4c6f-81a3-933c5f67a39f',
+            ok: response.ok,
+            status: response.status,
+            responseSummary: getBoldSignSummary(data),
+          });
 
           if (!response.ok) {
+            sendFormsErrorLog('BoldSign request failed', null, {
+              step: 'planning_ahead_kentucky_loved_one',
+              templateId: 'a01c1cff-d4d0-4c6f-81a3-933c5f67a39f',
+              status: response.status,
+              responseSummary: getBoldSignSummary(data),
+            });
             return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
           }
 
+          sendFormsLog('Request success', {
+            step: 'complete',
+          });
           res.json({message: 'Forms sent successfully'});
         } catch (error) {
+          sendFormsErrorLog('BoldSign request exception', error, {
+            step: 'planning_ahead_kentucky_loved_one',
+            templateId: 'a01c1cff-d4d0-4c6f-81a3-933c5f67a39f',
+          });
           return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
         }
       } else {
@@ -3361,6 +3724,10 @@ app.post('/send-forms', async (req, res) => {
           ]
         }`;
         try {
+          sendFormsLog('BoldSign request start', {
+            step: 'planning_ahead_kentucky_self',
+            templateId: '9f2aa91e-4269-42b8-ac1b-d42ca03da911',
+          });
           const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=9f2aa91e-4269-42b8-ac1b-d42ca03da911", {
             method: "POST",
             headers: {
@@ -3372,13 +3739,33 @@ app.post('/send-forms', async (req, res) => {
           });
 
           const data = await response.json();
+          sendFormsLog('BoldSign request result', {
+            step: 'planning_ahead_kentucky_self',
+            templateId: '9f2aa91e-4269-42b8-ac1b-d42ca03da911',
+            ok: response.ok,
+            status: response.status,
+            responseSummary: getBoldSignSummary(data),
+          });
 
           if (!response.ok) {
+            sendFormsErrorLog('BoldSign request failed', null, {
+              step: 'planning_ahead_kentucky_self',
+              templateId: '9f2aa91e-4269-42b8-ac1b-d42ca03da911',
+              status: response.status,
+              responseSummary: getBoldSignSummary(data),
+            });
             return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
           }
 
+          sendFormsLog('Request success', {
+            step: 'complete',
+          });
           res.json({message: 'Forms sent successfully'});
         } catch (error) {
+          sendFormsErrorLog('BoldSign request exception', error, {
+            step: 'planning_ahead_kentucky_self',
+            templateId: '9f2aa91e-4269-42b8-ac1b-d42ca03da911',
+          });
           return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
         }
       }
