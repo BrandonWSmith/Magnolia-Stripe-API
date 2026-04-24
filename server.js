@@ -1770,10 +1770,11 @@ app.post('/send-forms', async (req, res) => {
   const labelState = formData.deceased_state === "Kentucky" || formData.deceased_state === "KY" ? "KY" : "IN";
   const labelsJson = JSON.stringify([
     `${labelState}`,
-    `${formData.deceased_first_name.trim()}.${formData.deceased_last_name.trim()}`,
+    `${(formData.deceased_first_name || '').trim()}.${(formData.deceased_last_name || '').trim()}`,
     `${formData.order_number}`
   ]);
 
+  try {
   if (formData.service_package_type === "Immediate Need") {
     let unusedRoleIndices = [2, 3, 4, 5, 6];
     Object.keys(formData).forEach(key => {
@@ -3770,6 +3771,10 @@ app.post('/send-forms', async (req, res) => {
         }
       }
     }
+  }
+  } catch (error) {
+    sendFormsErrorLog('Unhandled error in send-forms', error);
+    return res.status(500).json({ message: 'There was an issue processing the request', data: error.message || error });
   }
 });
 
