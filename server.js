@@ -2896,7 +2896,7 @@ app.post('/send-forms', async (req, res) => {
       }
     }
   } else if (formData.service_package_type === "Planning Ahead") {
-    if (formData.deceased_state === "Indiana") {
+    if (formData.deceased_state === "Indiana" || formData.deceased_state === "IN") {
       const body = `{
         "Roles": [
           {
@@ -3191,7 +3191,7 @@ app.post('/send-forms', async (req, res) => {
         });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
-    } else if (formData.deceased_state === "Kentucky") {
+    } else if (formData.deceased_state === "Kentucky" || formData.deceased_state === "KY") {
       if (formData.plan_ahead_person === "Loved One") {
         const body = `{
           "Roles": [
@@ -3770,6 +3770,11 @@ app.post('/send-forms', async (req, res) => {
           return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
         }
       }
+    } else {
+      sendFormsErrorLog('Unrecognized deceased_state for Planning Ahead', null, {
+        deceased_state: formData.deceased_state,
+      });
+      return res.status(400).json({ message: 'Unrecognized state for Planning Ahead forms', deceased_state: formData.deceased_state });
     }
   }
   } catch (error) {
