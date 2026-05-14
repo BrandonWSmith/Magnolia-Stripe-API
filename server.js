@@ -289,11 +289,6 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
 app.post('/shopify-admin-api', async (req, res) => {
   const { queryString, variables } = req.body;
   const operationHint = getOperationHint(queryString);
-  console.log('[SHOPIFY_ADMIN_API] Request start', {
-    route: '/shopify-admin-api',
-    operationHint,
-    hasVariables: !!variables,
-  });
 
   const shopify = shopifyApi({
     apiVersion: LATEST_API_VERSION,
@@ -332,11 +327,6 @@ app.post('/shopify-admin-api', async (req, res) => {
           userErrors,
         });
       }
-      console.log('[SHOPIFY_ADMIN_API] Request success', {
-        route: '/shopify-admin-api',
-        operationHint,
-        userErrorGroupCount: userErrors.length,
-      });
     } catch (_logErr) {
       // Logging must never interrupt a successful response
     }
