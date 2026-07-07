@@ -755,7 +755,7 @@ app.post('/create-checkout-session', async (req, res) => {
 app.post('/update-checkout-session', async (req, res) => {
   const { sessionId, price } = req.body;
 
-  await stripeTest.checkout.sessions.update(sessionId, {
+  await stripe.checkout.sessions.update(sessionId, {
     line_items: [
       {
         price_data: {
