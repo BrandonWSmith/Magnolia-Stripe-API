@@ -5,7 +5,7 @@ const port = process.env.PORT || 11000;
 require('@shopify/shopify-api/adapters/node');
 const { Session, shopifyApi, LATEST_API_VERSION } = require('@shopify/shopify-api');
 const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
-const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST);
+//const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST);
 // const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST, {
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
@@ -75,6 +75,23 @@ const getBoldSignSummary = (data) => {
     status: data.status,
   };
 };
+
+const urnVariantCache = new Map();
+const URN_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function normalizeVariantGid(variantId) {
+  if (!variantId) return null;
+  const value = String(variantId);
+  return value.startsWith('gid://shopify/') ? value : `gid://shopify/ProductVariant/${value}`;
+}
+
+function countFullSizeUrns(items, urnVariantGids) {
+  const urnSet = new Set([...urnVariantGids].map(String));
+  return items.reduce((total, item) => {
+    const gid = normalizeVariantGid(item.variant_id);
+    return (gid && urnSet.has(gid)) ? total + Number(item.quantity ?? 0) : total;
+  }, 0);
+}
 
 app.use(cors({
   origin: '*',
@@ -738,7 +755,7 @@ app.post('/create-checkout-session', async (req, res) => {
 app.post('/update-checkout-session', async (req, res) => {
   const { sessionId, price } = req.body;
 
-  await stripeTest.checkout.sessions.update(sessionId, {
+  await stripe.checkout.sessions.update(sessionId, {
     line_items: [
       {
         price_data: {
@@ -1760,7 +1777,7 @@ app.post('/send-forms', async (req, res) => {
   const labelState = formData.deceased_state === "Kentucky" || formData.deceased_state === "KY" ? "KY" : "IN";
   const labelsJson = JSON.stringify([
     `${labelState}`,
-    `${(formData.deceased_first_name || '').trim()}.${(formData.deceased_last_name || '').trim()}`,
+    `${(formData.deceased_first_name || '').trim().replaceAll(' ', '')}.${(formData.deceased_last_name || '').trim().replaceAll(' ', '')}`,
     `${formData.order_number}`
   ]);
 
@@ -3837,6 +3854,164 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
   } catch (error) {
     console.error('[WEBHOOK] Error processing order:', error.message || error);
     res.send();
+  }
+});
+
+app.post('/carrier-service/rates', async (req, res) => {
+  try {
+    const payload = req.body;
+    const items = payload?.rate?.items ?? [];
+
+    if (!items.length) {
+      return res.json({ rates: [] });
+    }
+
+    const variantGids = [...new Set(
+      items.map(item => normalizeVariantGid(item.variant_id)).filter(Boolean)
+    )];
+
+    const cacheKey = [...variantGids].sort().join('|');
+    const cached = urnVariantCache.get(cacheKey);
+    let urnVariantGids;
+
+    if (cached && cached.expiresAt > Date.now()) {
+      urnVariantGids = new Set(cached.ids);
+    } else {
+      const shopify = shopifyApi({
+        apiVersion: LATEST_API_VERSION,
+        apiKey: process.env.SHOPIFY_API_KEY,
+        apiSecretKey: process.env.SHOPIFY_API_SECRET_KEY,
+        scopes: ['write_orders', 'write_customers'],
+        hostName: 'https://impact-ma-andorra-wrapped.trycloudflare.com',
+        isEmbeddedApp: true,
+        isCustomStoreApp: true,
+        adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+      });
+
+      const sessionId = shopify.session.getOfflineId('magnolia-cremations.myshopify.com');
+      const session = new Session({
+        id: sessionId,
+        shop: 'magnolia-cremations.myshopify.com',
+        state: 'state',
+        isOnline: false,
+      });
+
+      const client = new shopify.clients.Graphql({ session });
+
+      const { data } = await client.request(`
+        query VariantUrnFlags($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on ProductVariant {
+              id
+              product {
+                metafield(namespace: "custom", key: "is_full_size_urn") {
+                  value
+                }
+              }
+            }
+          }
+        }
+      `, { variables: { ids: variantGids } });
+
+      urnVariantGids = new Set();
+      for (const node of data?.nodes ?? []) {
+        if (node?.product?.metafield?.value === 'true') {
+          urnVariantGids.add(node.id);
+        }
+      }
+
+      urnVariantCache.set(cacheKey, {
+        expiresAt: Date.now() + URN_CACHE_TTL_MS,
+        ids: [...urnVariantGids],
+      });
+    }
+
+    const urnCount = countFullSizeUrns(items, urnVariantGids);
+
+    if (urnCount <= 2) {
+      return res.json({ rates: [] });
+    }
+
+    res.json({
+      rates: [{
+        service_name: 'Full-size urn shipping',
+        service_code: 'full-size-urn-shipping',
+        total_price: String(urnCount * 12500),
+        currency: payload?.rate?.currency ?? 'USD',
+        description: `Required for ${urnCount} full-size urns`,
+      }]
+    });
+  } catch (error) {
+    console.error('[CARRIER_SERVICE_RATES] Error:', error.message);
+    res.status(500).json({ rates: [] });
+  }
+});
+
+app.post('/setup-carrier-service', async (req, res) => {
+  try {
+    const shopify = shopifyApi({
+      apiVersion: LATEST_API_VERSION,
+      apiKey: process.env.SHOPIFY_API_KEY,
+      apiSecretKey: process.env.SHOPIFY_API_SECRET_KEY,
+      scopes: ['write_orders', 'write_customers'],
+      hostName: 'https://impact-ma-andorra-wrapped.trycloudflare.com',
+      isEmbeddedApp: true,
+      isCustomStoreApp: true,
+      adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+    });
+
+    const sessionId = shopify.session.getOfflineId('magnolia-cremations.myshopify.com');
+    const session = new Session({
+      id: sessionId,
+      shop: 'magnolia-cremations.myshopify.com',
+      state: 'state',
+      isOnline: false,
+    });
+
+    const client = new shopify.clients.Graphql({ session });
+
+    const metafieldResult = await client.request(`
+      mutation CreateFullSizeUrnMetafieldDefinition($definition: MetafieldDefinitionInput!) {
+        metafieldDefinitionCreate(definition: $definition) {
+          createdDefinition { id name namespace key }
+          userErrors { field message }
+        }
+      }
+    `, {
+      variables: {
+        definition: {
+          name: 'Full-size urn',
+          namespace: 'custom',
+          key: 'is_full_size_urn',
+          type: 'boolean',
+          ownerType: 'PRODUCT',
+          access: { admin: 'MERCHANT_READ_WRITE', storefront: 'NONE' },
+        },
+      },
+    });
+
+    const carrierResult = await client.request(`
+      mutation CreateCarrierService($input: DeliveryCarrierServiceCreateInput!) {
+        carrierServiceCreate(input: $input) {
+          carrierService { id name callbackUrl active }
+          userErrors { field message }
+        }
+      }
+    `, {
+      variables: {
+        input: {
+          name: 'Magnolia Custom Shipping',
+          callbackUrl: 'https://magnolia-api.onrender.com/carrier-service/rates',
+          supportsServiceDiscovery: true,
+          active: true,
+        },
+      },
+    });
+
+    res.json({ metafieldResult: metafieldResult.data, carrierResult: carrierResult.data });
+  } catch (error) {
+    console.error('[SETUP_CARRIER_SERVICE] Error:', error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
