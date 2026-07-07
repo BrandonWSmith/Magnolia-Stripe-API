@@ -4,13 +4,94 @@ const cors = require('cors');
 const port = process.env.PORT || 11000;
 require('@shopify/shopify-api/adapters/node');
 const { Session, shopifyApi, LATEST_API_VERSION } = require('@shopify/shopify-api');
-const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY);
+const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY)
+const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST);
 // const stripeTest = require('stripe')(process.env.STRIPE_SERVER_KEY_TEST, {
 //   apiVersion: '2025-03-31.basil; checkout_server_update_beta=v1'
 // });
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const { GoogleAuth } = require('google-auth-library');
 const { google } = require('googleapis');
+
+const getOperationHint = (queryString = '') => {
+  if (!queryString || typeof queryString !== 'string') {
+    return 'unknown';
+  }
+
+  const normalized = queryString.replace(/\s+/g, ' ').trim();
+  const match = normalized.match(/(?:mutation|query)\s+([A-Za-z0-9_]+)/i);
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  return normalized.slice(0, 100);
+};
+
+const collectUserErrors = (value, path = 'data', results = [], _depth = 0) => {
+  if (_depth > 8) return results;
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectUserErrors(item, `${path}[${index}]`, results, _depth + 1));
+    return results;
+  }
+
+  if (!value || typeof value !== 'object') {
+    return results;
+  }
+
+  Object.entries(value).forEach(([key, nestedValue]) => {
+    const nestedPath = `${path}.${key}`;
+    if (key === 'userErrors' && Array.isArray(nestedValue) && nestedValue.length > 0) {
+      results.push({ path: nestedPath, count: nestedValue.length, errors: nestedValue });
+    }
+    collectUserErrors(nestedValue, nestedPath, results, _depth + 1);
+  });
+
+  return results;
+};
+
+const summarizeShopifyErrorPayload = (payload) => {
+  if (!payload || typeof payload !== 'object') {
+    return payload;
+  }
+
+  return {
+    errors: payload?.errors || payload?.data?.errors,
+    userErrors:
+      payload?.data?.userErrors ||
+      payload?.data?.data?.orderUpdate?.userErrors ||
+      payload?.data?.orderUpdate?.userErrors,
+  };
+};
+
+const getBoldSignSummary = (data) => {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+
+  return {
+    id: data.id || data.documentId,
+    message: data.message || data.errorMessage,
+    status: data.status,
+  };
+};
+
+const urnVariantCache = new Map();
+const URN_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function normalizeVariantGid(variantId) {
+  if (!variantId) return null;
+  const value = String(variantId);
+  return value.startsWith('gid://shopify/') ? value : `gid://shopify/ProductVariant/${value}`;
+}
+
+function countFullSizeUrns(items, urnVariantGids) {
+  const urnSet = new Set([...urnVariantGids].map(String));
+  return items.reduce((total, item) => {
+    const gid = normalizeVariantGid(item.variant_id);
+    return (gid && urnSet.has(gid)) ? total + Number(item.quantity ?? 0) : total;
+  }, 0);
+}
 
 app.use(cors({
   origin: '*',
@@ -224,6 +305,8 @@ app.post('/klaviyo-checkout-event', async (req, res) => {
 
 app.post('/shopify-admin-api', async (req, res) => {
   const { queryString, variables } = req.body;
+  const operationHint = getOperationHint(queryString);
+
   const shopify = shopifyApi({
     apiVersion: LATEST_API_VERSION,
     apiKey: process.env.SHOPIFY_API_KEY,
@@ -252,9 +335,27 @@ app.post('/shopify-admin-api', async (req, res) => {
       variables: variables,
     });
 
+    try {
+      const userErrors = collectUserErrors(data, 'response');
+      if (userErrors.length > 0) {
+        console.warn('[SHOPIFY_ADMIN_API] GraphQL userErrors returned', {
+          route: '/shopify-admin-api',
+          operationHint,
+          userErrors,
+        });
+      }
+    } catch (_logErr) {
+      // Logging must never interrupt a successful response
+    }
+
     res.json({data: data});
   } catch (e) {
-    console.log(e.response.body);
+    console.error('[SHOPIFY_ADMIN_API] Request error', {
+      route: '/shopify-admin-api',
+      operationHint,
+      error: e?.message,
+      responseSummary: summarizeShopifyErrorPayload(e?.response?.body),
+    });
     res.status(400).json({data: e});
   }
 });
@@ -397,10 +498,20 @@ app.post('/create-payment-intent', async (req, res) => {
 });
 
 app.post('/update-payment-intent', async (req, res) => {
+  const { paymentIntentId, metadata, price } = req.body;
+  console.log('[UPDATE_PAYMENT_INTENT] Request start', {
+    route: '/update-payment-intent',
+    paymentIntentId,
+    hasMetadata: !!metadata,
+    hasPrice: price !== undefined,
+  });
+
   try {
-    const { paymentIntentId, metadata, price } = req.body;
-    
     if (!paymentIntentId || paymentIntentId === '') {
+      console.warn('[UPDATE_PAYMENT_INTENT] Request rejected', {
+        route: '/update-payment-intent',
+        reason: 'missing_payment_intent_id',
+      });
       return res.status(400).json({ error: 'Valid payment intent ID is required' });
     }
 
@@ -431,18 +542,36 @@ app.post('/update-payment-intent', async (req, res) => {
       paymentIntentId,
       updateParams
     );
+
+    console.log('[UPDATE_PAYMENT_INTENT] Request success', {
+      route: '/update-payment-intent',
+      paymentIntentId: updatedPaymentIntent.id,
+    });
     
     res.json({ success: true, paymentIntent: updatedPaymentIntent });
   } catch (error) {
-    console.error('Error updating payment intent:', error);
+    console.error('[UPDATE_PAYMENT_INTENT] Request error', {
+      route: '/update-payment-intent',
+      paymentIntentId,
+      message: error?.message,
+      stack: error?.stack,
+    });
     res.status(400).json({ error: error.message });
   }
 });
 
 app.post('/prepare-payment', async (req, res) => {
-  try {
-    const { paymentIntentId, paymentMethodId, amount } = req.body;
+  const { paymentIntentId, paymentMethodId, amount } = req.body;
+  const paymentMethodIdMasked = paymentMethodId ? `${paymentMethodId.slice(0, 6)}***` : null;
 
+  console.log('[PREPARE_PAYMENT] Request start', {
+    route: '/prepare-payment',
+    paymentIntentId,
+    paymentMethodId: paymentMethodIdMasked,
+    amount,
+  });
+
+  try {
     // Attach the PaymentMethod to the PaymentIntent
     await stripe.paymentIntents.update(
       paymentIntentId,
@@ -472,6 +601,13 @@ app.post('/prepare-payment', async (req, res) => {
       isInstantVerification = false;
     }
 
+    console.log('[PREPARE_PAYMENT] Request success', {
+      route: '/prepare-payment',
+      paymentIntentId,
+      insufficientFunds,
+      isInstantVerification,
+    });
+
     res.json({ 
       success: true, 
       insufficientFunds, 
@@ -479,7 +615,12 @@ app.post('/prepare-payment', async (req, res) => {
       isInstantVerification
     });
   } catch (error) {
-    console.error('Error in prepare-payment:', error);
+    console.error('[PREPARE_PAYMENT] Request error', {
+      route: '/prepare-payment',
+      paymentIntentId,
+      message: error?.message,
+      stack: error?.stack,
+    });
     res.status(400).json({ error: error.message });
   }
 });
@@ -678,7 +819,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
     };
 
     try {
-      const response = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+      const response = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -902,64 +1043,141 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
   const { first_name, last_name, phone, email, urgency, caseNumber } = req.body;
 
   try {
-    const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
-    customerSet(input: $input, identifier: $identifier) {
-        customer {
-          id
-          firstName
-          lastName
-          email
-          phone
-        }
-        userErrors {
-          field
-          message
+    // First, search for existing customer by email
+    const searchCustomerQueryString = `query {
+      customers(first: 1, query: "email:${email}") {
+        edges {
+          node {
+            id
+          }
         }
       }
     }`;
 
-    const setCustomerVariables = {
-      'input': {
-        'firstName': first_name,
-        'lastName': last_name,
-        'email': email,
-        'phone': phone
-      },
-      'identifier': {
-        'phone': phone
-      }
-    };
-
-    const setCustomerResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+    const searchCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({queryString: setCustomerQueryString, variables: setCustomerVariables}),
+      body: JSON.stringify({queryString: searchCustomerQueryString}),
     });
 
-    if (!setCustomerResponse.ok) {
-      const setCustomerError = await setCustomerResponse.json();
-      return res.status(500).json({message: 'There was an issue creating/updating customer in Shopify', data: setCustomerError});
-    }
+    const searchCustomerData = await searchCustomerResponse.json();
+    const existingCustomerId = searchCustomerData.data?.data?.customers?.edges?.[0]?.node?.id;
 
-    const setCustomerData = await setCustomerResponse.json();
+    let customerId;
 
-    if (setCustomerData.data?.customerSet?.userErrors?.length > 0) {
-      return res.status(500).json({
-        message: 'GraphQL errors in customer creation',
-        data: setCustomerData.data.customerSet.userErrors
+    if (existingCustomerId) {
+      // Customer exists - use customerUpdate instead
+      const updateCustomerQueryString = `mutation customerUpdate($input: CustomerInput!) {
+        customerUpdate(input: $input) {
+          customer {
+            id
+            firstName
+            lastName
+            email
+            phone
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`;
+
+      const updateCustomerVariables = {
+        'input': {
+          'id': existingCustomerId,
+          'firstName': first_name,
+          'lastName': last_name,
+          'phone': phone
+        }
+      };
+
+      const updateCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: updateCustomerQueryString, variables: updateCustomerVariables}),
       });
-    }
 
-    if (!setCustomerData.data?.data?.customerSet?.customer?.id) {
-      return res.status(500).json({
-        message: 'No customer ID returned from Shopify',
-        data: setCustomerData
+      if (!updateCustomerResponse.ok) {
+        const updateCustomerError = await updateCustomerResponse.json();
+        return res.status(500).json({message: 'There was an issue updating customer in Shopify', data: updateCustomerError});
+      }
+
+      const updateCustomerData = await updateCustomerResponse.json();
+
+      if (updateCustomerData.data?.customerUpdate?.userErrors?.length > 0) {
+        return res.status(500).json({
+          message: 'GraphQL errors in customer update',
+          data: updateCustomerData.data.customerUpdate.userErrors
+        });
+      }
+
+      customerId = existingCustomerId;
+    } else {
+      // No existing customer - create new one with customerSet
+      const setCustomerQueryString = `mutation customerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
+        customerSet(input: $input, identifier: $identifier) {
+          customer {
+            id
+            firstName
+            lastName
+            email
+            phone
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`;
+
+      const setCustomerVariables = {
+        'input': {
+          'firstName': first_name,
+          'lastName': last_name,
+          'email': email,
+          'phone': phone
+        },
+        'identifier': {
+          'email': email
+        }
+      };
+
+      const setCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({queryString: setCustomerQueryString, variables: setCustomerVariables}),
       });
-    }
 
-    const customerId = setCustomerData.data.data.customerSet.customer.id;
+      if (!setCustomerResponse.ok) {
+        const setCustomerError = await setCustomerResponse.json();
+        return res.status(500).json({message: 'There was an issue creating customer in Shopify', data: setCustomerError});
+      }
+
+      const setCustomerData = await setCustomerResponse.json();
+
+      if (setCustomerData.data?.customerSet?.userErrors?.length > 0) {
+        return res.status(500).json({
+          message: 'GraphQL errors in customer creation',
+          data: setCustomerData.data.customerSet.userErrors
+        });
+      }
+
+      if (!setCustomerData.data?.data?.customerSet?.customer?.id) {
+        return res.status(500).json({
+          message: 'No customer ID returned from Shopify',
+          data: setCustomerData
+        });
+      }
+
+      customerId = setCustomerData.data.data.customerSet.customer.id;
+    }
 
     const metafieldQueryString = `mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $metafields) {
@@ -988,7 +1206,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       ]
     };
 
-    const metafieldResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+    const metafieldResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
@@ -1026,7 +1244,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       'tags': ['Medicaid Eligible']
     };
 
-    const addCustomerTagResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+    const addCustomerTagResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
@@ -1073,7 +1291,7 @@ app.post('/medicaid-eligibility-approved', async (req, res) => {
       }
     };
 
-    const createGiftCardResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+    const createGiftCardResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
@@ -1230,7 +1448,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
       }
     }`;
 
-    const getCustomerResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+    const getCustomerResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
@@ -1277,7 +1495,7 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
         'tags': ['Medicaid', '‼️Awaiting Payment‼️']
       };
 
-      const addTagsResponse = await fetch('https://magnolia-stripe-api.onrender.com/shopify-admin-api', {
+      const addTagsResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -1318,14 +1536,95 @@ app.post('/add-medicaid-order-tags', async (req, res) => {
 app.post('/send-forms', async (req, res) => {
   const { formData } = req.body;
   const boldSignApiKey = process.env.BOLDSIGN_API_KEY;
+  const sendFormsContext = {
+    route: '/send-forms',
+    order_id: formData?.order_id,
+    order_number: formData?.order_number,
+    contact_email: formData?.contact_email,
+    paymentIntentId: formData?.paymentIntentId || formData?.payment_intent_id,
+  };
+  const sendFormsLog = (step, details = {}) => {
+    console.log(`[SEND_FORMS] ${step}`, {
+      ...sendFormsContext,
+      ...details,
+    });
+  };
+  const sendFormsErrorLog = (step, error, details = {}) => {
+    console.error(`[SEND_FORMS] ${step}`, {
+      ...sendFormsContext,
+      ...details,
+      message: error?.message || error,
+      stack: error?.stack,
+    });
+  };
 
-  const witnessCremation = formData.witness_cremation_quantity > 0 ? "Selected" : "Not Selected";
-  const urnDetails = formData.urn_details ? formData.urn_details.split(",") : null;
-  const merchandiseDetails0 = formData.merchandise_0_details ? formData.merchandise_0_details.split(",") : null;
-  const merchandiseDetails1 = formData.merchandise_1_details ? formData.merchandise_1_details.split(",") : null;
-  const merchandiseDetails2 = formData.merchandise_2_details ? formData.merchandise_2_details.split(",") : null;
-  const merchandiseDetails3 = formData.merchandise_3_details ? formData.merchandise_3_details.split(",") : null;
-  const liability = formData.private_family_viewing_total > 0 || witnessCremation === "Selected";
+  sendFormsLog('Request start', {
+    service_package_type: formData?.service_package_type,
+    deceased_state: formData?.deceased_state,
+  });
+
+  const urnDetails = formData.urn_details ? formData.urn_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
+  const merchandiseDetails0 = formData.merchandise_0_details ? formData.merchandise_0_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
+  const merchandiseDetails1 = formData.merchandise_1_details ? formData.merchandise_1_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
+  const merchandiseDetails2 = formData.merchandise_2_details ? formData.merchandise_2_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
+  const merchandiseDetails3 = formData.merchandise_3_details ? formData.merchandise_3_details.split(",").map(s => s.replace(/"/g, '\\"')) : null;
+  const liability = formData.private_family_viewing_total > 0 || formData.witness_cremation_total > 0;
+
+  const updateNotesQueryString = `mutation OrderUpdate($input: OrderInput!) {
+    orderUpdate(input: $input) {
+      order {
+        id
+        customAttributes {
+          key
+          value
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }`;
+
+  const updateNotesVariables = {
+    'input': {
+      'id': `gid://shopify/Order/${formData.order_id}`,
+      'customAttributes': [
+        {
+          'key': 'formData',
+          'value': JSON.stringify(formData)
+        }
+      ]
+    }
+  };
+
+  sendFormsLog('Shopify notes update start', {
+    shopify_order_gid: `gid://shopify/Order/${formData.order_id}`,
+  });
+
+  const shopifyResponse = await fetch('https://magnolia-api.onrender.com/shopify-admin-api', {
+    method: 'POST',
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({queryString: updateNotesQueryString, variables: updateNotesVariables}),
+  });
+
+  const shopifyData = await shopifyResponse.json();
+
+  sendFormsLog('Shopify notes update result', {
+    ok: shopifyResponse.ok,
+    status: shopifyResponse.status,
+    hasData: !!shopifyData,
+  });
+
+  if (!shopifyResponse.ok) {
+    sendFormsErrorLog('Shopify notes update failed', null, {
+      status: shopifyResponse.status,
+      responseSummary: summarizeShopifyErrorPayload(shopifyData),
+    });
+    return res.status(500).json({message: 'There was an issue updating order notes in Shopify', data: shopifyData});
+  }
 
   async function sendToGoogleSheet() {
     const auth = new GoogleAuth({
@@ -1418,7 +1717,7 @@ app.post('/send-forms', async (req, res) => {
         formData.delivery_method,
         `${formData.shipping_address ? formData.shipping_address : ''}`,
         `${formData.private_family_viewing_total > 0 ? "Selected" : "Not Selected"}`,
-        witnessCremation,
+        formData.witness_cremation_total,
         formData.total_before_tax,
         formData.sales_tax,
         formData.total_order
@@ -1430,6 +1729,7 @@ app.post('/send-forms', async (req, res) => {
     }
 
     try {
+      sendFormsLog('Google Sheets append start');
       const results = await service.spreadsheets.values.append({
         spreadsheetId,
         range,
@@ -1438,17 +1738,30 @@ app.post('/send-forms', async (req, res) => {
         resource
       });
 
+      sendFormsLog('Google Sheets append result', {
+        ok: results.status === 200,
+        status: results.status,
+        updatedRange: results?.data?.updates?.updatedRange,
+      });
+
       if (results.status != 200) {
+        sendFormsErrorLog('Google Sheets append non-OK result', null, {
+          status: results.status,
+        });
         return res.json({message: 'There was an issue sending data to Google Sheets', data: results});
       }
 
       return results;
     } catch (error) {
+      sendFormsErrorLog('Google Sheets append error', error);
       return res.json({message: 'There was an issue sending data to Google Sheets', data: error.message || error});
     }
   }
 
   const googleSheetsData = await sendToGoogleSheet();
+  sendFormsLog('Google Sheets append finished', {
+    returnedStatus: googleSheetsData?.status,
+  });
 
   let nokCount = 0;
   const witnessing = `
@@ -1461,7 +1774,14 @@ app.post('/send-forms', async (req, res) => {
       "Id": "shipping_address",
       "Value": "${formData.shipping_address}"
     }`;
+  const labelState = formData.deceased_state === "Kentucky" || formData.deceased_state === "KY" ? "KY" : "IN";
+  const labelsJson = JSON.stringify([
+    `${labelState}`,
+    `${(formData.deceased_first_name || '').trim()}.${(formData.deceased_last_name || '').trim()}`,
+    `${formData.order_number}`
+  ]);
 
+  try {
   if (formData.service_package_type === "Immediate Need") {
     let unusedRoleIndices = [2, 3, 4, 5, 6];
     Object.keys(formData).forEach(key => {
@@ -1513,7 +1833,7 @@ app.post('/send-forms', async (req, res) => {
       "Roles": [
         {
           "RoleIndex": 1,
-          "SignerName": "${formData.contact_first_name}",
+          "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
           "SignerOrder": 1,
           "SignerEmail": "${formData.contact_email}",
           "SignerType": "Signer",
@@ -1602,7 +1922,7 @@ app.post('/send-forms', async (req, res) => {
             },
             {
               "Id": "witness_price",
-              "Value": "${witnessCremation}"
+              "Value": "$${formData.witness_cremation_total}"
             },
             {
               "Id": "private_viewing_price", 
@@ -1855,10 +2175,10 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "deceased_gender_2",
               "Value": "${formData.deceased_gender}"
-            },${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? witnessing : ''}
+            },${formData.witness_cremation_total > 0 || formData.private_family_viewing_total > 0 ? witnessing : ''}
             {
               "Id": "cremation_time",
-              "Value": "${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? 'Specified' : 'Unspecified'}"
+              "Value": "${formData.witness_cremation_total > 0 || formData.private_family_viewing_total > 0 ? 'Specified' : 'Unspecified'}"
             },
             {
               "Id": "shipping_check",
@@ -1884,11 +2204,16 @@ app.post('/send-forms', async (req, res) => {
           ]
         }
       ],
-      "RoleRemovalIndices": [${unusedRoleIndices}]
+      "RoleRemovalIndices": ${JSON.stringify(unusedRoleIndices)},
+      "Labels": ${labelsJson}
     }`;
     
     if (liability) {
       try {
+        sendFormsLog('BoldSign request start', {
+          step: 'immediate_need_primary_liability',
+          templateId: '8bcbdc10-3630-4a14-8884-1b96480ca07c',
+        });
         const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=8bcbdc10-3630-4a14-8884-1b96480ca07c", {
           method: "POST",
           headers: {
@@ -1900,17 +2225,41 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const data = await response.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'immediate_need_primary_liability',
+          templateId: '8bcbdc10-3630-4a14-8884-1b96480ca07c',
+          ok: response.ok,
+          status: response.status,
+          responseSummary: getBoldSignSummary(data),
+        });
 
         if (!response.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'immediate_need_primary_liability',
+            templateId: '8bcbdc10-3630-4a14-8884-1b96480ca07c',
+            status: response.status,
+            responseSummary: getBoldSignSummary(data),
+          });
           return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
         }
 
+        sendFormsLog('Request success', {
+          step: 'complete',
+        });
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
+        sendFormsErrorLog('BoldSign request exception', error, {
+          step: 'immediate_need_primary_liability',
+          templateId: '8bcbdc10-3630-4a14-8884-1b96480ca07c',
+        });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
     } else {
       try {
+        sendFormsLog('BoldSign request start', {
+          step: 'immediate_need_primary_no_liability',
+          templateId: 'a49e2fce-576f-4198-a31e-c41acb80e60e',
+        });
         const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=a49e2fce-576f-4198-a31e-c41acb80e60e", {
           method: "POST",
           headers: {
@@ -1922,13 +2271,33 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const data = await response.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'immediate_need_primary_no_liability',
+          templateId: 'a49e2fce-576f-4198-a31e-c41acb80e60e',
+          ok: response.ok,
+          status: response.status,
+          responseSummary: getBoldSignSummary(data),
+        });
 
         if (!response.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'immediate_need_primary_no_liability',
+            templateId: 'a49e2fce-576f-4198-a31e-c41acb80e60e',
+            status: response.status,
+            responseSummary: getBoldSignSummary(data),
+          });
           return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
         }
 
+        sendFormsLog('Request success', {
+          step: 'complete',
+        });
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
+        sendFormsErrorLog('BoldSign request exception', error, {
+          step: 'immediate_need_primary_no_liability',
+          templateId: 'a49e2fce-576f-4198-a31e-c41acb80e60e',
+        });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
     }
@@ -1937,10 +2306,11 @@ app.post('/send-forms', async (req, res) => {
       "Roles": [
         {
           "RoleIndex": 1,
-          "SignerName": "${formData.contact_first_name}",
+          "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
           "SignerOrder": 1,
           "SignerEmail": "${formData.contact_email}",
           "SignerType": "Signer",
+          "Labels": ${labelsJson},
           "ExistingFormFields": [
             {
               "Id": "service_type",
@@ -2026,7 +2396,7 @@ app.post('/send-forms', async (req, res) => {
             },
             {
               "Id": "witness_price",
-              "Value": "${witnessCremation}"
+              "Value": "$${formData.witness_cremation_total}"
             },
             {
               "Id": "private_viewing_price", 
@@ -2330,7 +2700,7 @@ app.post('/send-forms', async (req, res) => {
         },
         {
           "RoleIndex": 2,
-          "SignerName": "${formData.contact_first_name}",
+          "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
           "SignerOrder": 2,
           "SignerEmail": "${formData.contact_email}",
           "SignerType": "Signer",
@@ -2358,10 +2728,10 @@ app.post('/send-forms', async (req, res) => {
             {
               "Id": "contact_relationship",
               "Value": "${formData.contact_relationship}"
-            },${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? witnessing : ''}
+            },${formData.witness_cremation_total > 0 || formData.private_family_viewing_total > 0 ? witnessing : ''}
             {
               "Id": "cremation_time",
-              "Value": "${witnessCremation === 'Selected' || formData.private_family_viewing_total > 0 ? 'Specified' : 'Unspecified'}"
+              "Value": "${formData.witness_cremation_total > 0 || formData.private_family_viewing_total > 0 ? 'Specified' : 'Unspecified'}"
             },
             {
               "Id": "shipping_check",
@@ -2371,11 +2741,16 @@ app.post('/send-forms', async (req, res) => {
         }${nokPrefills.length > 0 ? `,
           ${nokPrefills.map(role => JSON.stringify(role))}` : ''}
       ],
-      "RoleRemovalIndices": [${unusedRoleIndices}]
+      "RoleRemovalIndices": ${JSON.stringify(unusedRoleIndices)},
+      "Labels": ${labelsJson}
     }`;
 
     if (liability) {
       try {
+        sendFormsLog('BoldSign request start', {
+          step: 'passing_soon_sgs_vital_liability',
+          templateId: 'fca14583-fc27-401a-af74-2e9e8b3f02af',
+        });
         const sgsAndVitalResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=fca14583-fc27-401a-af74-2e9e8b3f02af", {
           method: "POST",
           headers: {
@@ -2387,11 +2762,28 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const sgsAndVitalData = await sgsAndVitalResponse.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'passing_soon_sgs_vital_liability',
+          templateId: 'fca14583-fc27-401a-af74-2e9e8b3f02af',
+          ok: sgsAndVitalResponse.ok,
+          status: sgsAndVitalResponse.status,
+          responseSummary: getBoldSignSummary(sgsAndVitalData),
+        });
 
         if (!sgsAndVitalResponse.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'passing_soon_sgs_vital_liability',
+            templateId: 'fca14583-fc27-401a-af74-2e9e8b3f02af',
+            status: sgsAndVitalResponse.status,
+            responseSummary: getBoldSignSummary(sgsAndVitalData),
+          });
           return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, body: sgsAndVitalBody});
         }
 
+        sendFormsLog('BoldSign request start', {
+          step: 'passing_soon_crem_auth_liability',
+          templateId: '886f8e77-1140-4efb-aab5-c554fbb4f65a',
+        });
         const cremAuthResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=886f8e77-1140-4efb-aab5-c554fbb4f65a", {
           method: "POST",
           headers: {
@@ -2403,17 +2795,40 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const cremAuthData = await cremAuthResponse.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'passing_soon_crem_auth_liability',
+          templateId: '886f8e77-1140-4efb-aab5-c554fbb4f65a',
+          ok: cremAuthResponse.ok,
+          status: cremAuthResponse.status,
+          responseSummary: getBoldSignSummary(cremAuthData),
+        });
 
         if (!cremAuthResponse.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'passing_soon_crem_auth_liability',
+            templateId: '886f8e77-1140-4efb-aab5-c554fbb4f65a',
+            status: cremAuthResponse.status,
+            responseSummary: getBoldSignSummary(cremAuthData),
+          });
           return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, body: cremAuthBody});
         }
 
+        sendFormsLog('Request success', {
+          step: 'complete',
+        });
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
+        sendFormsErrorLog('BoldSign request exception', error, {
+          step: 'passing_soon_liability',
+        });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
       }
     } else {
       try {
+        sendFormsLog('BoldSign request start', {
+          step: 'passing_soon_sgs_vital_no_liability',
+          templateId: '8c83f1c7-b40f-47d4-a03d-5b530b6bb0ae',
+        });
         const sgsAndVitalResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=8c83f1c7-b40f-47d4-a03d-5b530b6bb0ae", {
           method: "POST",
           headers: {
@@ -2425,11 +2840,28 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const sgsAndVitalData = await sgsAndVitalResponse.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'passing_soon_sgs_vital_no_liability',
+          templateId: '8c83f1c7-b40f-47d4-a03d-5b530b6bb0ae',
+          ok: sgsAndVitalResponse.ok,
+          status: sgsAndVitalResponse.status,
+          responseSummary: getBoldSignSummary(sgsAndVitalData),
+        });
 
         if (!sgsAndVitalResponse.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'passing_soon_sgs_vital_no_liability',
+            templateId: '8c83f1c7-b40f-47d4-a03d-5b530b6bb0ae',
+            status: sgsAndVitalResponse.status,
+            responseSummary: getBoldSignSummary(sgsAndVitalData),
+          });
           return res.status(sgsAndVitalResponse.status).json({message: 'There was an issue sending SG&S/Vital forms', data: sgsAndVitalData, body: sgsAndVitalBody});
         }
 
+        sendFormsLog('BoldSign request start', {
+          step: 'passing_soon_crem_auth_no_liability',
+          templateId: '23932329-d871-412c-98b6-492d57aabf88',
+        });
         const cremAuthResponse = await fetch("https://api.boldsign.com/v1/template/send?templateId=23932329-d871-412c-98b6-492d57aabf88", {
           method: "POST",
           headers: {
@@ -2441,26 +2873,46 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const cremAuthData = await cremAuthResponse.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'passing_soon_crem_auth_no_liability',
+          templateId: '23932329-d871-412c-98b6-492d57aabf88',
+          ok: cremAuthResponse.ok,
+          status: cremAuthResponse.status,
+          responseSummary: getBoldSignSummary(cremAuthData),
+        });
 
         if (!cremAuthResponse.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'passing_soon_crem_auth_no_liability',
+            templateId: '23932329-d871-412c-98b6-492d57aabf88',
+            status: cremAuthResponse.status,
+            responseSummary: getBoldSignSummary(cremAuthData),
+          });
           return res.status(cremAuthResponse.status).json({message: 'There was an issue sending Cremation Auth forms', data: cremAuthData, body: cremAuthBody});
         }
 
+        sendFormsLog('Request success', {
+          step: 'complete',
+        });
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
+        sendFormsErrorLog('BoldSign request exception', error, {
+          step: 'passing_soon_no_liability',
+        });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error});
       }
     }
   } else if (formData.service_package_type === "Planning Ahead") {
-    if (formData.deceased_state === "Indiana") {
+    if (formData.deceased_state === "Indiana" || formData.deceased_state === "IN") {
       const body = `{
         "Roles": [
           {
             "RoleIndex": 1,
-            "SignerName": "${formData.contact_first_name}",
+            "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
             "SignerOrder": 1,
             "SignerEmail": "${formData.contact_email}",
             "SignerType": "Signer",
+            "Labels": ${labelsJson},
             "ExistingFormFields": [
               {
                 "Id": "service_type",
@@ -2546,7 +2998,7 @@ app.post('/send-forms', async (req, res) => {
               },
               {
                 "Id": "witness_price",
-                "Value": "${witnessCremation}"
+                "Value": "$${formData.witness_cremation_total}"
               },
               {
                 "Id": "private_viewing_price", 
@@ -2702,6 +3154,10 @@ app.post('/send-forms', async (req, res) => {
       }`;
 
       try {
+        sendFormsLog('BoldSign request start', {
+          step: 'planning_ahead_indiana',
+          templateId: '775c8725-e1f9-47b2-874c-be69e7f51de1',
+        });
         const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=775c8725-e1f9-47b2-874c-be69e7f51de1", {
           method: "POST",
           headers: {
@@ -2713,25 +3169,46 @@ app.post('/send-forms', async (req, res) => {
         });
 
         const data = await response.json();
+        sendFormsLog('BoldSign request result', {
+          step: 'planning_ahead_indiana',
+          templateId: '775c8725-e1f9-47b2-874c-be69e7f51de1',
+          ok: response.ok,
+          status: response.status,
+          responseSummary: getBoldSignSummary(data),
+        });
 
         if (!response.ok) {
+          sendFormsErrorLog('BoldSign request failed', null, {
+            step: 'planning_ahead_indiana',
+            templateId: '775c8725-e1f9-47b2-874c-be69e7f51de1',
+            status: response.status,
+            responseSummary: getBoldSignSummary(data),
+          });
           return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
         }
 
+        sendFormsLog('Request success', {
+          step: 'complete',
+        });
         res.json({message: 'Forms sent successfully'});
       } catch (error) {
+        sendFormsErrorLog('BoldSign request exception', error, {
+          step: 'planning_ahead_indiana',
+          templateId: '775c8725-e1f9-47b2-874c-be69e7f51de1',
+        });
         return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
       }
-    } else if (formData.deceased_state === "Kentucky") {
+    } else if (formData.deceased_state === "Kentucky" || formData.deceased_state === "KY") {
       if (formData.plan_ahead_person === "Loved One") {
         const body = `{
           "Roles": [
             {
               "RoleIndex": 1,
-              "SignerName": "${formData.contact_first_name}",
+              "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
               "SignerOrder": 1,
               "SignerEmail": "${formData.contact_email}",
               "SignerType": "Signer",
+              "Labels": ${labelsJson},
               "ExistingFormFields": [
                 {
                   "Id": "service_type",
@@ -2817,7 +3294,7 @@ app.post('/send-forms', async (req, res) => {
                 },
                 {
                   "Id": "witness_price",
-                  "Value": "${witnessCremation}"
+                  "Value": "$${formData.witness_cremation_total}"
                 },
                 {
                   "Id": "private_viewing_price", 
@@ -2977,6 +3454,10 @@ app.post('/send-forms', async (req, res) => {
         }`;
         
         try {
+          sendFormsLog('BoldSign request start', {
+            step: 'planning_ahead_kentucky_loved_one',
+            templateId: 'a01c1cff-d4d0-4c6f-81a3-933c5f67a39f',
+          });
           const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=a01c1cff-d4d0-4c6f-81a3-933c5f67a39f", {
             method: "POST",
             headers: {
@@ -2988,13 +3469,33 @@ app.post('/send-forms', async (req, res) => {
           });
 
           const data = await response.json();
+          sendFormsLog('BoldSign request result', {
+            step: 'planning_ahead_kentucky_loved_one',
+            templateId: 'a01c1cff-d4d0-4c6f-81a3-933c5f67a39f',
+            ok: response.ok,
+            status: response.status,
+            responseSummary: getBoldSignSummary(data),
+          });
 
           if (!response.ok) {
+            sendFormsErrorLog('BoldSign request failed', null, {
+              step: 'planning_ahead_kentucky_loved_one',
+              templateId: 'a01c1cff-d4d0-4c6f-81a3-933c5f67a39f',
+              status: response.status,
+              responseSummary: getBoldSignSummary(data),
+            });
             return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
           }
 
+          sendFormsLog('Request success', {
+            step: 'complete',
+          });
           res.json({message: 'Forms sent successfully'});
         } catch (error) {
+          sendFormsErrorLog('BoldSign request exception', error, {
+            step: 'planning_ahead_kentucky_loved_one',
+            templateId: 'a01c1cff-d4d0-4c6f-81a3-933c5f67a39f',
+          });
           return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
         }
       } else {
@@ -3002,10 +3503,11 @@ app.post('/send-forms', async (req, res) => {
           "Roles": [
             {
               "RoleIndex": 1,
-              "SignerName": "${formData.contact_first_name}",
+              "SignerName": "${formData.contact_first_name} ${formData.contact_last_name}",
               "SignerOrder": 1,
               "SignerEmail": "${formData.contact_email}",
               "SignerType": "Signer",
+              "Labels": ${labelsJson},
               "ExistingFormFields": [
                 {
                   "Id": "service_type",
@@ -3091,7 +3593,7 @@ app.post('/send-forms', async (req, res) => {
                 },
                 {
                   "Id": "witness_price",
-                  "Value": "${witnessCremation}"
+                  "Value": "$${formData.witness_cremation_total}"
                 },
                 {
                   "Id": "private_viewing_price", 
@@ -3230,6 +3732,10 @@ app.post('/send-forms', async (req, res) => {
           ]
         }`;
         try {
+          sendFormsLog('BoldSign request start', {
+            step: 'planning_ahead_kentucky_self',
+            templateId: '9f2aa91e-4269-42b8-ac1b-d42ca03da911',
+          });
           const response = await fetch("https://api.boldsign.com/v1/template/send?templateId=9f2aa91e-4269-42b8-ac1b-d42ca03da911", {
             method: "POST",
             headers: {
@@ -3241,17 +3747,46 @@ app.post('/send-forms', async (req, res) => {
           });
 
           const data = await response.json();
+          sendFormsLog('BoldSign request result', {
+            step: 'planning_ahead_kentucky_self',
+            templateId: '9f2aa91e-4269-42b8-ac1b-d42ca03da911',
+            ok: response.ok,
+            status: response.status,
+            responseSummary: getBoldSignSummary(data),
+          });
 
           if (!response.ok) {
+            sendFormsErrorLog('BoldSign request failed', null, {
+              step: 'planning_ahead_kentucky_self',
+              templateId: '9f2aa91e-4269-42b8-ac1b-d42ca03da911',
+              status: response.status,
+              responseSummary: getBoldSignSummary(data),
+            });
             return res.status(response.status).json({message: 'There was an issue sending forms', data: data, body: body});
           }
 
+          sendFormsLog('Request success', {
+            step: 'complete',
+          });
           res.json({message: 'Forms sent successfully'});
         } catch (error) {
+          sendFormsErrorLog('BoldSign request exception', error, {
+            step: 'planning_ahead_kentucky_self',
+            templateId: '9f2aa91e-4269-42b8-ac1b-d42ca03da911',
+          });
           return res.status(500).json({message: 'There was an issue sending forms', data: error.message || error, body: body});
         }
       }
+    } else {
+      sendFormsErrorLog('Unrecognized deceased_state for Planning Ahead', null, {
+        deceased_state: formData.deceased_state,
+      });
+      return res.status(400).json({ message: 'Unrecognized state for Planning Ahead forms', deceased_state: formData.deceased_state });
     }
+  }
+  } catch (error) {
+    sendFormsErrorLog('Unhandled error in send-forms', error);
+    return res.status(500).json({ message: 'There was an issue processing the request', data: error.message || error });
   }
 });
 
@@ -3261,6 +3796,8 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
   if (order.source_name != 'web') {
     return res.status(200).send();
   }
+  
+  await new Promise(resolve => setTimeout(resolve, 5000));
 
   try {
     const auth = new GoogleAuth({
@@ -3301,7 +3838,7 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
     formData.order_id = order.id;
     formData.webhook = true;
 
-    const response = await fetch("https://magnolia-stripe-api.onrender.com/send-forms", {
+    const response = await fetch("https://magnolia-api.onrender.com/send-forms", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -3317,6 +3854,164 @@ app.post('/shopify-webhook/orders-create', async (req, res) => {
   } catch (error) {
     console.error('[WEBHOOK] Error processing order:', error.message || error);
     res.send();
+  }
+});
+
+app.post('/carrier-service/rates', async (req, res) => {
+  try {
+    const payload = req.body;
+    const items = payload?.rate?.items ?? [];
+
+    if (!items.length) {
+      return res.json({ rates: [] });
+    }
+
+    const variantGids = [...new Set(
+      items.map(item => normalizeVariantGid(item.variant_id)).filter(Boolean)
+    )];
+
+    const cacheKey = [...variantGids].sort().join('|');
+    const cached = urnVariantCache.get(cacheKey);
+    let urnVariantGids;
+
+    if (cached && cached.expiresAt > Date.now()) {
+      urnVariantGids = new Set(cached.ids);
+    } else {
+      const shopify = shopifyApi({
+        apiVersion: LATEST_API_VERSION,
+        apiKey: process.env.SHOPIFY_API_KEY,
+        apiSecretKey: process.env.SHOPIFY_API_SECRET_KEY,
+        scopes: ['write_orders', 'write_customers'],
+        hostName: 'https://impact-ma-andorra-wrapped.trycloudflare.com',
+        isEmbeddedApp: true,
+        isCustomStoreApp: true,
+        adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+      });
+
+      const sessionId = shopify.session.getOfflineId('magnolia-cremations.myshopify.com');
+      const session = new Session({
+        id: sessionId,
+        shop: 'magnolia-cremations.myshopify.com',
+        state: 'state',
+        isOnline: false,
+      });
+
+      const client = new shopify.clients.Graphql({ session });
+
+      const { data } = await client.request(`
+        query VariantUrnFlags($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on ProductVariant {
+              id
+              product {
+                metafield(namespace: "custom", key: "is_full_size_urn") {
+                  value
+                }
+              }
+            }
+          }
+        }
+      `, { variables: { ids: variantGids } });
+
+      urnVariantGids = new Set();
+      for (const node of data?.nodes ?? []) {
+        if (node?.product?.metafield?.value === 'true') {
+          urnVariantGids.add(node.id);
+        }
+      }
+
+      urnVariantCache.set(cacheKey, {
+        expiresAt: Date.now() + URN_CACHE_TTL_MS,
+        ids: [...urnVariantGids],
+      });
+    }
+
+    const urnCount = countFullSizeUrns(items, urnVariantGids);
+
+    if (urnCount <= 2) {
+      return res.json({ rates: [] });
+    }
+
+    res.json({
+      rates: [{
+        service_name: 'Full-size urn shipping',
+        service_code: 'full-size-urn-shipping',
+        total_price: String(urnCount * 12500),
+        currency: payload?.rate?.currency ?? 'USD',
+        description: `Required for ${urnCount} full-size urns`,
+      }]
+    });
+  } catch (error) {
+    console.error('[CARRIER_SERVICE_RATES] Error:', error.message);
+    res.status(500).json({ rates: [] });
+  }
+});
+
+app.post('/setup-carrier-service', async (req, res) => {
+  try {
+    const shopify = shopifyApi({
+      apiVersion: LATEST_API_VERSION,
+      apiKey: process.env.SHOPIFY_API_KEY,
+      apiSecretKey: process.env.SHOPIFY_API_SECRET_KEY,
+      scopes: ['write_orders', 'write_customers'],
+      hostName: 'https://impact-ma-andorra-wrapped.trycloudflare.com',
+      isEmbeddedApp: true,
+      isCustomStoreApp: true,
+      adminApiAccessToken: process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+    });
+
+    const sessionId = shopify.session.getOfflineId('magnolia-cremations.myshopify.com');
+    const session = new Session({
+      id: sessionId,
+      shop: 'magnolia-cremations.myshopify.com',
+      state: 'state',
+      isOnline: false,
+    });
+
+    const client = new shopify.clients.Graphql({ session });
+
+    const metafieldResult = await client.request(`
+      mutation CreateFullSizeUrnMetafieldDefinition($definition: MetafieldDefinitionInput!) {
+        metafieldDefinitionCreate(definition: $definition) {
+          createdDefinition { id name namespace key }
+          userErrors { field message }
+        }
+      }
+    `, {
+      variables: {
+        definition: {
+          name: 'Full-size urn',
+          namespace: 'custom',
+          key: 'is_full_size_urn',
+          type: 'boolean',
+          ownerType: 'PRODUCT',
+          access: { admin: 'MERCHANT_READ_WRITE', storefront: 'NONE' },
+        },
+      },
+    });
+
+    const carrierResult = await client.request(`
+      mutation CreateCarrierService($input: DeliveryCarrierServiceCreateInput!) {
+        carrierServiceCreate(input: $input) {
+          carrierService { id name callbackUrl active }
+          userErrors { field message }
+        }
+      }
+    `, {
+      variables: {
+        input: {
+          name: 'Magnolia Custom Shipping',
+          callbackUrl: 'https://magnolia-api.onrender.com/carrier-service/rates',
+          supportsServiceDiscovery: true,
+          active: true,
+        },
+      },
+    });
+
+    res.json({ metafieldResult: metafieldResult.data, carrierResult: carrierResult.data });
+  } catch (error) {
+    console.error('[SETUP_CARRIER_SERVICE] Error:', error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
